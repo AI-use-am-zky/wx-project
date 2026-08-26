@@ -1,0 +1,6 @@
+<view class="safe">
+  <view class="card">
+    <view>暂无可用卡券</view>
+    <view class="muted" style="margin-top:12rpx">第一期不包含营销红包，入口先保留，避免和「我的」结构对不齐。</view>
+  </view>
+</view>

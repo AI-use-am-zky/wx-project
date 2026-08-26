@@ -1,0 +1,12 @@
+<view class="safe">
+  <view class="card muted">请从已签收订单填写抬头。支付后可填，签收后才开具。</view>
+  <view class="card" wx:for="{{list}}" wx:key="id">
+    <view>{{item.id}}</view>
+    <view class="muted">{{item.statusText}} ¥{{item.paidYuan}}</view>
+    <input placeholder="发票抬头" data-id="{{item.id}}" data-k="title" bindinput="onF" />
+    <input placeholder="税号（企业）" data-id="{{item.id}}" data-k="taxNo" bindinput="onF" />
+    <input placeholder="接收邮箱" data-id="{{item.id}}" data-k="email" bindinput="onF" />
+    <view class="btn" data-id="{{item.id}}" bindtap="save">保存抬头</view>
+    <view class="btn-ghost btn" wx:if="{{item.status==='signed'}}" data-id="{{item.id}}" bindtap="issue">申请开具</view>
+  </view>
+</view>

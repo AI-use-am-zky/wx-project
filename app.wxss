@@ -1,0 +1,67 @@
+page {
+  background: #f6f3ee;
+  color: #1f2a24;
+  font-size: 28rpx;
+  line-height: 1.5;
+}
+
+.safe {
+  padding: 24rpx 28rpx 48rpx;
+}
+
+.card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 8rpx 24rpx rgba(31, 42, 36, 0.04);
+}
+
+.h1 {
+  font-size: 40rpx;
+  font-weight: 600;
+  margin-bottom: 8rpx;
+}
+
+.sub {
+  color: #6b746e;
+  font-size: 24rpx;
+}
+
+.btn {
+  margin-top: 24rpx;
+  background: #2d5a4a;
+  color: #fff;
+  border-radius: 16rpx;
+  text-align: center;
+  padding: 22rpx;
+  font-size: 30rpx;
+}
+
+.btn-ghost {
+  background: #fff;
+  color: #2d5a4a;
+  border: 2rpx solid #2d5a4a;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #eef1ef;
+}
+
+.muted { color: #6b746e; }
+.price { color: #b4532a; font-weight: 600; font-size: 36rpx; }
+.tag {
+  display: inline-block;
+  background: #e8f0ec;
+  color: #2d5a4a;
+  font-size: 22rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+input, textarea, picker {
+  width: 100%;
+}

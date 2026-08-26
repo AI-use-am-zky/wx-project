@@ -1,0 +1,11 @@
+<view class="safe">
+  <view class="card muted" wx:if="{{!list.length}}">还没有宠物档案，下单前可先在这里维护</view>
+  <view class="card" wx:for="{{list}}" wx:key="id">
+    <view class="row">
+      <text>{{item.name}} · {{item.breed || item.species || '未填品种'}}</text>
+      <text class="muted" data-id="{{item.id}}" catchtap="del">删除</text>
+    </view>
+    <view class="muted">{{item.weight_kg ? (item.weight_kg + 'kg') : ''}} {{item.gender || ''}}</view>
+  </view>
+  <view class="btn" bindtap="add">添加宠物</view>
+</view>

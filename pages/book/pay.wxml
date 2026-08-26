@@ -1,0 +1,15 @@
+<view class="safe">
+  <view class="card">
+    <view class="muted">支付给本服务商，不跳转其他小程序</view>
+    <view class="price" style="margin-top:12rpx">请确认资料无误后支付</view>
+  </view>
+  <view class="card">
+    <label>
+      <checkbox checked="{{agreed}}" bindtap="toggle" />
+      已阅读并同意
+    </label>
+    <text class="link" bindtap="openAgree">《运输服务协议》</text>
+  </view>
+  <button class="phone" open-type="getPhoneNumber" bindgetphonenumber="onPhone" wx:if="{{needPhone}}">授权手机号</button>
+  <view class="btn" bindtap="pay">确认并支付（模拟）</view>
+</view>

@@ -1,0 +1,64 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/orders/list",
+    "pages/me/index",
+    "pages/book/cities",
+    "pages/book/addresses",
+    "pages/book/pet-quote",
+    "pages/book/quote-result",
+    "pages/book/fulfill",
+    "pages/book/pay",
+    "pages/orders/detail",
+    "pages/orders/surcharge-pay",
+    "pages/me/addresses",
+    "pages/me/invoice",
+    "pages/legal/agreement",
+    "pages/me/pets",
+    "pages/me/pet-edit",
+    "pages/me/docs",
+    "pages/me/coupons",
+    "pages/me/messages",
+    "pages/me/settings"
+  ],
+  "window": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "宠途空运",
+    "navigationBarBackgroundColor": "#2d5a4a",
+    "backgroundColor": "#f6f3ee"
+  },
+  "tabBar": {
+    "color": "#8a918c",
+    "selectedColor": "#2d5a4a",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "首页",
+        "iconPath": "images/tab-home.png",
+        "selectedIconPath": "images/tab-home-active.png"
+      },
+      {
+        "pagePath": "pages/orders/list",
+        "text": "订单",
+        "iconPath": "images/tab-order.png",
+        "selectedIconPath": "images/tab-order-active.png"
+      },
+      {
+        "pagePath": "pages/me/index",
+        "text": "我的",
+        "iconPath": "images/tab-me.png",
+        "selectedIconPath": "images/tab-me-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents",
+  "permission": {
+    "scope.camera": {
+      "desc": "用于拍摄宠物近照、航空箱和检疫证明"
+    }
+  }
+}

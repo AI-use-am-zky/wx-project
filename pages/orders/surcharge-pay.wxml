@@ -1,0 +1,7 @@
+<view class="safe">
+  <view class="card">
+    <view>复秤超出 1kg，需补差</view>
+    <view class="price">¥{{yuan}}</view>
+    <view class="btn" bindtap="pay">模拟支付补差</view>
+  </view>
+</view>

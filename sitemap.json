@@ -1,0 +1,4 @@
+{
+  "desc": "宠途空运 sitemap",
+  "rules": [{ "action": "allow", "page": "*" }]
+}

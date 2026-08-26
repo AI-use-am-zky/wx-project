@@ -1,0 +1,17 @@
+<view class="safe">
+  <view class="card muted" wx:if="{{!list.length}}">暂无保存的地址，可在下单时填写并保存</view>
+  <view class="card" wx:for="{{list}}" wx:key="id">
+    <view>{{item.name}} {{item.phone}}</view>
+    <view class="muted">{{item.province}}{{item.city}}{{item.district}}{{item.detail}}</view>
+  </view>
+  <view class="card" wx:if="{{showForm}}">
+    <input placeholder="姓名" value="{{form.name}}" data-k="name" bindinput="onF" />
+    <input placeholder="手机" value="{{form.phone}}" data-k="phone" bindinput="onF" />
+    <input placeholder="省" value="{{form.province}}" data-k="province" bindinput="onF" />
+    <input placeholder="市" value="{{form.city}}" data-k="city" bindinput="onF" />
+    <input placeholder="区" value="{{form.district}}" data-k="district" bindinput="onF" />
+    <input placeholder="详细门牌" value="{{form.detail}}" data-k="detail" bindinput="onF" />
+    <view class="btn" bindtap="save">保存</view>
+  </view>
+  <view class="btn" wx:else bindtap="openForm">新增</view>
+</view>

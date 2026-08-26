@@ -1,0 +1,29 @@
+<view class="safe">
+  <view class="card" wx:if="{{!role || role==='from'}}">
+    <view class="muted">{{role==='from' ? '选择出发城市' : '出发'}}</view>
+    <view class="city-grid">
+      <view
+        wx:for="{{cities}}"
+        wx:key="code"
+        class="city {{fromCode===item.code?'on':''}}"
+        data-role="from"
+        data-code="{{item.code}}"
+        bindtap="pick"
+      >{{item.name}}</view>
+    </view>
+  </view>
+  <view class="card" wx:if="{{!role || role==='to'}}">
+    <view class="muted">{{role==='to' ? '选择到达城市' : '到达'}}</view>
+    <view class="city-grid">
+      <view
+        wx:for="{{cities}}"
+        wx:key="code"
+        class="city {{toCode===item.code?'on':''}}"
+        data-role="to"
+        data-code="{{item.code}}"
+        bindtap="pick"
+      >{{item.name}}</view>
+    </view>
+  </view>
+  <view class="btn" wx:if="{{!role}}" bindtap="next">下一步：填写地址</view>
+</view>

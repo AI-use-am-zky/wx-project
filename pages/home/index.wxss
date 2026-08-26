@@ -1,0 +1,60 @@
+.hero { background: linear-gradient(160deg, #2d5a4a, #3f7a64); color: #fff; }
+.hero .sub, .hero .h1 { color: #fff; }
+.hero .tag { background: rgba(255,255,255,.18); color: #fff; }
+
+.city-row {
+  display: flex;
+  align-items: center;
+  padding: 8rpx 0 16rpx;
+}
+.city-pick {
+  flex: 1;
+  min-width: 0;
+}
+.city-pick.right { text-align: right; }
+.city-name {
+  margin-top: 8rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.swap {
+  width: 64rpx;
+  height: 64rpx;
+  margin: 0 12rpx;
+  border-radius: 50%;
+  background: #eef4f1;
+  color: #2d5a4a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  flex-shrink: 0;
+}
+.resume {
+  position: fixed;
+  left: 28rpx;
+  right: 28rpx;
+  bottom: 24rpx;
+  background: #2d5a4a;
+  color: #fff;
+  border-radius: 48rpx;
+  padding: 20rpx 28rpx;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 12rpx 32rpx rgba(45, 90, 74, 0.28);
+  z-index: 20;
+}
+.resume-txt { flex: 1; font-size: 26rpx; }
+.resume-x {
+  width: 48rpx;
+  height: 48rpx;
+  margin-left: 12rpx;
+  border-radius: 50%;
+  background: rgba(255,255,255,.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  line-height: 1;
+}

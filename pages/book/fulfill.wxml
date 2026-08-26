@@ -1,0 +1,39 @@
+<view class="safe">
+  <view class="hint" wx:if="{{isDevTools}}">开发工具里点 + 只在本地添加示例图，不会写入项目目录，避免触发重新编译。</view>
+  <view class="card">
+    <view>宠物近照（至少 1 张）</view>
+    <view class="photos">
+      <image wx:for="{{petPhotos}}" wx:key="*this" class="ph" src="{{item}}" mode="aspectFill" lazy-load />
+      <view class="add" bindtap="addPet">+</view>
+    </view>
+  </view>
+  <view class="card" wx:if="{{crateMode==='own'}}">
+    <view>自备航空箱照片</view>
+    <view class="photos">
+      <image wx:for="{{cratePhotos}}" wx:key="*this" class="ph" src="{{item}}" mode="aspectFill" />
+      <view class="add" bindtap="addCrate">+</view>
+    </view>
+  </view>
+  <view class="card" wx:if="{{quarantineMode==='self'}}">
+    <view>检疫证明</view>
+    <view class="photos">
+      <image wx:for="{{quarantinePhotos}}" wx:key="*this" class="ph" src="{{item}}" mode="aspectFill" />
+      <view class="add" bindtap="addQuar">+</view>
+    </view>
+  </view>
+  <view class="card" wx:if="{{quarantineMode==='agency'}}">
+    <view>代办检疫信息</view>
+    <input placeholder="办理人姓名" value="{{agency.name}}" data-k="name" bindinput="onAgency" />
+    <input placeholder="电话" value="{{agency.phone}}" data-k="phone" bindinput="onAgency" />
+    <input placeholder="宠物名" value="{{agency.petName}}" data-k="petName" bindinput="onAgency" />
+  </view>
+  <view class="btn" bindtap="next">去支付</view>
+</view>
+
+<view class="cam-mask" wx:if="{{cameraOn}}">
+  <camera class="cam" device-position="back" flash="off" binderror="onCamError"></camera>
+  <view class="cam-bar">
+    <view class="cam-btn ghost" bindtap="closeCam">取消</view>
+    <view class="cam-btn" bindtap="takeCam">拍照</view>
+  </view>
+</view>

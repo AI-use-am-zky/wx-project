@@ -1,0 +1,26 @@
+<view class="safe">
+  <view wx:if="{{needLogin}}" class="card">
+    <view>登录后查看订单</view>
+    <view class="btn" bindtap="doLogin">登录</view>
+  </view>
+  <block wx:else>
+    <scroll-view class="tabs" scroll-x>
+      <view
+        wx:for="{{tabs}}"
+        wx:key="key"
+        class="tab {{tab===item.key?'on':''}}"
+        data-tab="{{item.key}}"
+        bindtap="switchTab"
+      >{{item.label}}</view>
+    </scroll-view>
+    <view wx:if="{{!list.length}}" class="card muted">该分类暂无订单</view>
+    <view class="card" wx:for="{{list}}" wx:key="id" bindtap="open" data-id="{{item.id}}">
+      <view class="row">
+        <text>{{item.breed}} · {{item.weightKg}}kg</text>
+        <text class="tag">{{item.statusText}}</text>
+      </view>
+      <view class="muted">{{item.sender.city}} → {{item.receiver.city}}</view>
+      <view class="price">¥{{item.paidYuan}}</view>
+    </view>
+  </block>
+</view>

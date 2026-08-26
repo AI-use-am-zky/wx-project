@@ -1,0 +1,98 @@
+<view class="me-page" style="padding-top: {{padTop}}px;">
+  <view class="hero" style="padding-top: {{navPad}}px;">
+    <view class="nav" style="height: {{navH}}px;">
+      <view class="nav-icons">
+        <view class="ico" bindtap="goMsg">消息</view>
+        <view class="ico" bindtap="goSet">设置</view>
+      </view>
+    </view>
+    <view class="profile card">
+      <view class="avatar">宠</view>
+      <view class="profile-txt" bindtap="tapUser">
+        <view class="name">{{loggedIn ? (phone || '已登录') : '点击登录'}}</view>
+        <view class="muted">{{loggedIn ? ('账号 ' + (phone || '未绑定手机')) : '登录后管理订单与资料'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="body">
+    <view class="card">
+      <view class="sec-hd">
+        <text>我的订单</text>
+        <text class="link" bindtap="allOrders">查看全部 ></text>
+      </view>
+      <view class="grid4">
+        <view class="gitem" bindtap="goTab" data-tab="pending">
+          <view class="gico">
+            付
+            <view wx:if="{{badges.pending}}" class="badge">{{badges.pending}}</view>
+          </view>
+          <view>待付款</view>
+        </view>
+        <view class="gitem" bindtap="goTab" data-tab="transit">
+          <view class="gico">
+            运
+            <view wx:if="{{badges.transit}}" class="badge">{{badges.transit}}</view>
+          </view>
+          <view>出行中</view>
+        </view>
+        <view class="gitem" bindtap="goTab" data-tab="done">
+          <view class="gico">
+            完
+            <view wx:if="{{badges.done}}" class="badge">{{badges.done}}</view>
+          </view>
+          <view>已完成</view>
+        </view>
+        <view class="gitem" bindtap="goTab" data-tab="cancelled">
+          <view class="gico">
+            消
+            <view wx:if="{{badges.cancelled}}" class="badge">{{badges.cancelled}}</view>
+          </view>
+          <view>已取消</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="card row-link" bindtap="goPage" data-url="/pages/me/pets">
+      <text>我的宠物</text>
+      <text class="muted">></text>
+    </view>
+
+    <view class="card">
+      <view class="sec-hd"><text>更多服务</text></view>
+      <view class="grid4">
+        <view class="gitem" bindtap="goPage" data-url="/pages/me/addresses?title=地址管理">
+          <view class="gico">址</view>
+          <view>地址管理</view>
+        </view>
+        <view class="gitem" bindtap="goPage" data-url="/pages/me/coupons">
+          <view class="gico">券</view>
+          <view>红包卡券</view>
+        </view>
+        <view class="gitem" bindtap="goPage" data-url="/pages/me/addresses?title=常用联系人">
+          <view class="gico">联</view>
+          <view>常用联系人</view>
+        </view>
+        <view class="gitem" bindtap="goPage" data-url="/pages/me/docs">
+          <view class="gico">证</view>
+          <view>检疫资料</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="sec-hd"><text>客服中心</text></view>
+      <view class="grid4" style="justify-content: flex-start;">
+        <button class="gitem contact-btn" open-type="contact">
+          <view class="gico">讯</view>
+          <view>联系客服</view>
+        </button>
+        <view class="gitem" bindtap="call">
+          <view class="gico">电</view>
+          <view>客服电话</view>
+        </view>
+      </view>
+      <view class="hours">客服工作时间 {{hours}}</view>
+    </view>
+  </view>
+</view>

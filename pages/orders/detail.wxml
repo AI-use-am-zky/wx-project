@@ -1,0 +1,20 @@
+<view class="safe">
+  <view class="card">
+    <view class="h1">{{order.statusText}}</view>
+    <view class="muted" wx:if="{{order.sfWaybillNo}}" bindtap="copy">运单 {{order.sfWaybillNo}}（点按复制）</view>
+    <view class="price">¥{{order.paidYuan}}</view>
+  </view>
+  <view class="card">
+    <view>时间轴</view>
+    <view class="tl" wx:for="{{order.timeline}}" wx:key="at">
+      <view class="muted">{{item.at}}</view>
+      <view>{{item.text}}</view>
+    </view>
+  </view>
+  <view class="btn" wx:if="{{canCancel}}" bindtap="cancel">申请取消</view>
+  <view class="btn" wx:if="{{order.status==='surcharge_pending'}}" bindtap="surcharge">去补差</view>
+  <view class="card">
+    <button open-type="contact">在线客服</button>
+    <view class="btn-ghost btn" bindtap="call">打电话 {{phone}}</view>
+  </view>
+</view>

@@ -1,0 +1,13 @@
+<view class="safe">
+  <view class="card muted" wx:if="{{!list.length}}">可预先上传检疫证明，下单时仍须按当次要求提交</view>
+  <view class="card" wx:for="{{list}}" wx:key="id">
+    <view class="row">
+      <text>{{item.title}}</text>
+      <text class="muted" data-id="{{item.id}}" catchtap="del">删除</text>
+    </view>
+  </view>
+  <view class="card">
+    <input placeholder="资料名称（如检疫证）" value="{{title}}" bindinput="onTitle" />
+    <view class="btn" bindtap="upload">上传图片并保存</view>
+  </view>
+</view>

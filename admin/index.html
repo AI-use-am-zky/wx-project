@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>宠途空运 · 管理端</title>
+  <style>
+    :root { --bg:#f6f3ee; --card:#fff; --ink:#1f2a24; --muted:#6b746e; --acc:#2d5a4a; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
+    header { background:var(--acc); color:#fff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; }
+    main { max-width:1100px; margin:20px auto; padding:0 16px; }
+    .card { background:var(--card); border-radius:12px; padding:16px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+    input, select, button, textarea { font: inherit; padding:8px 10px; border:1px solid #d7ddd8; border-radius:8px; }
+    button { background:var(--acc); color:#fff; border:none; cursor:pointer; }
+    button.ghost { background:#fff; color:var(--acc); border:1px solid var(--acc); }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { text-align:left; padding:8px 6px; border-bottom:1px solid #eee; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+    .muted { color:var(--muted); font-size:13px; }
+    pre { white-space:pre-wrap; font-size:12px; background:#f3f6f4; padding:8px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>宠途空运管理端</strong>
+    <span id="who" class="muted" style="color:#d9efe4"></span>
+  </header>
+  <main>
+    <div class="card" id="loginBox">
+      <h3>登录</h3>
+      <div class="row">
+        <input id="pwd" type="password" placeholder="管理员密码" />
+        <button onclick="login()">登录</button>
+      </div>
+      <p class="muted">默认见 server/.env.example 的 ADMIN_PASSWORD</p>
+    </div>
+    <div id="app" style="display:none">
+      <div class="card">
+        <div class="row">
+          <select id="status">
+            <option value="">全部状态</option>
+            <option value="sf_failed">顺丰失败</option>
+            <option value="pending_pay">待支付</option>
+            <option value="booked">待揽收</option>
+            <option value="surcharge_pending">待补差</option>
+            <option value="signed">已签收</option>
+          </select>
+          <button onclick="loadOrders()">刷新列表</button>
+        </div>
+        <table>
+          <thead><tr><th>ID</th><th>状态</th><th>金额</th><th>运单</th><th></th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="card" id="detail"></div>
+      <div class="card">
+        <h3>运营配置（后定数字可改）</h3>
+        <div class="row">
+          <label>加价比例 <input id="markup_rate" /></label>
+          <label>最低服务费(分) <input id="min_service_fee_cents" /></label>
+          <label>取消手续费(分) <input id="cancel_fee_before_collect_cents" /></label>
+          <label>客服电话 <input id="customer_service_phone" /></label>
+          <button onclick="saveSettings()">保存</button>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>
+    const api = location.origin
+    let token = localStorage.getItem('adminToken') || ''
+    async function req(path, opts={}) {
+      const res = await fetch(api + path, {
+        ...opts,
+        headers: { 'Content-Type':'application/json', Authorization: token ? 'Bearer '+token : '', ...(opts.headers||{}) }
+      })
+      return res.json()
+    }
+    async function login() {
+      const r = await req('/admin/login', { method:'POST', body: JSON.stringify({ password: document.getElementById('pwd').value }) })
+      if (r.code !== 0) return alert(r.message)
+      token = r.data.token
+      localStorage.setItem('adminToken', token)
+      showApp()
+    }
+    function showApp() {
+      document.getElementById('loginBox').style.display = 'none'
+      document.getElementById('app').style.display = 'block'
+      document.getElementById('who').textContent = '已登录'
+      loadOrders(); loadSettings()
+    }
+    async function loadOrders() {
+      const st = document.getElementById('status').value
+      const r = await req('/admin/orders' + (st ? ('?status='+st) : ''))
+      const tb = document.getElementById('tbody')
+      tb.innerHTML = (r.data.list||[]).map(o => `<tr>
+        <td>${o.id.slice(0,8)}</td><td>${o.status}</td><td>¥${(o.paidCents/100).toFixed(2)}</td>
+        <td>${o.sfWaybillNo||'-'}</td>
+        <td><button class="ghost" onclick="openDetail('${o.id}')">详情</button></td>
+      </tr>`).join('')
+    }
+    async function openDetail(id) {
+      const r = await req('/admin/orders/'+id)
+      const o = r.data
+      window.__oid = id
+      document.getElementById('detail').innerHTML = `
+        <h3>订单 ${id}</h3>
+        <p>状态 <b>${o.status}</b> 运单 ${o.sfWaybillNo||'无'} 错误 ${o.sfError||o.rawSfError||'-'}</p>
+        <pre>${JSON.stringify({sender:o.sender,receiver:o.receiver,pet:o.breed,weight:o.weightKg,pickup:o.pickupDate,lines:o.lines},null,2)}</pre>
+        <div class="row">
+          <button onclick="act('/admin/orders/'+window.__oid+'/sf-retry')">重试顺丰</button>
+          <input id="wb" placeholder="补运单号" />
+          <button onclick="waybill()">保存运单</button>
+          <input id="kg" placeholder="实际重量kg" />
+          <button onclick="reweigh()">复秤</button>
+          <button onclick="act('/admin/orders/'+window.__oid+'/refund')">退款</button>
+          <button onclick="act('/admin/orders/'+window.__oid+'/mark-signed')">标记签收</button>
+        </div>`
+    }
+    async function act(path) {
+      const r = await req(path, { method:'POST', body:'{}' })
+      alert(r.message || 'ok')
+      openDetail(window.__oid); loadOrders()
+    }
+    async function waybill() {
+      await req('/admin/orders/'+window.__oid+'/waybill', { method:'POST', body: JSON.stringify({ waybillNo: document.getElementById('wb').value }) })
+      openDetail(window.__oid); loadOrders()
+    }
+    async function reweigh() {
+      await req('/admin/orders/'+window.__oid+'/reweigh', { method:'POST', body: JSON.stringify({ actualKg: Number(document.getElementById('kg').value) }) })
+      openDetail(window.__oid); loadOrders()
+    }
+    async function loadSettings() {
+      const r = await req('/admin/settings')
+      for (const k of ['markup_rate','min_service_fee_cents','cancel_fee_before_collect_cents','customer_service_phone']) {
+        if (document.getElementById(k)) document.getElementById(k).value = r.data[k] || ''
+      }
+    }
+    async function saveSettings() {
+      const body = {}
+      for (const k of ['markup_rate','min_service_fee_cents','cancel_fee_before_collect_cents','customer_service_phone']) {
+        body[k] = document.getElementById(k).value
+      }
+      await req('/admin/settings', { method:'PUT', body: JSON.stringify(body) })
+      alert('已保存')
+    }
+    if (token) showApp()
+  </script>
+</body>
+</html>

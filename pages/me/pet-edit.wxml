@@ -1,0 +1,11 @@
+<view class="safe">
+  <view class="card">
+    <input placeholder="宠物名" value="{{name}}" bindinput="on" data-k="name" />
+    <input placeholder="种类（猫/狗等）" value="{{species}}" bindinput="on" data-k="species" />
+    <input placeholder="品种" value="{{breed}}" bindinput="on" data-k="breed" />
+    <input placeholder="体重 kg" type="digit" value="{{weightKg}}" bindinput="on" data-k="weightKg" />
+    <input placeholder="性别" value="{{gender}}" bindinput="on" data-k="gender" />
+    <input placeholder="备注" value="{{note}}" bindinput="on" data-k="note" />
+  </view>
+  <view class="btn" bindtap="save">保存</view>
+</view>

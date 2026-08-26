@@ -1,0 +1,33 @@
+<view class="safe">
+  <view class="hero card">
+    <view class="h1">宠物空运 · 门到门</view>
+    <view class="sub">只做空运。填好寄收地址后再估价，全程不跳转其他快递小程序。</view>
+    <view class="tag" style="margin-top:16rpx">一单一只宠物</view>
+  </view>
+  <view class="card">
+    <view class="city-row">
+      <picker class="city-pick" mode="multiSelector" range="{{fromRange}}" value="{{fromIndex}}" data-role="from" bindchange="onPick" bindcolumnchange="onColumn">
+        <view>
+          <view class="muted">出发</view>
+          <view class="city-name">{{fromName || '请选择省 / 市'}}</view>
+        </view>
+      </picker>
+      <view class="swap" bindtap="swap">⇄</view>
+      <picker class="city-pick right" mode="multiSelector" range="{{toRange}}" value="{{toIndex}}" data-role="to" bindchange="onPick" bindcolumnchange="onColumn">
+        <view>
+          <view class="muted">到达</view>
+          <view class="city-name">{{toName || '请选择省 / 市'}}</view>
+        </view>
+      </picker>
+    </view>
+    <view class="btn" bindtap="goBook">去寄宠</view>
+  </view>
+  <view class="card">
+    <view>服务说明</view>
+    <view class="sub" style="margin-top:12rpx">上门取件日期由你选，具体时段和航班按承运方可约时间安排。报价含门到门，可加购航空箱、代办检疫与保价。</view>
+  </view>
+  <view class="resume" wx:if="{{resumeText}}" catchtap="resumeBook">
+    <view class="resume-txt">{{resumeText}}</view>
+    <view class="resume-x" catchtap="closeResume">×</view>
+  </view>
+</view>

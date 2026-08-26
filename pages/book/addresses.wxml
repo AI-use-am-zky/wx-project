@@ -1,0 +1,29 @@
+<view class="safe">
+  <view class="card">
+    <view class="card-hd">
+      <text>寄件人（上门取件）</text>
+      <text class="link" data-who="sender" bindtap="paste">粘贴识别</text>
+    </view>
+    <view class="locked">{{fromLabel || '出发城市'}}</view>
+    <input placeholder="姓名" value="{{sender.name}}" data-who="sender" data-k="name" bindinput="onField" />
+    <input placeholder="11位手机号" type="number" maxlength="11" value="{{sender.phone}}" data-who="sender" data-k="phone" bindinput="onField" />
+    <view wx:if="{{senderPhoneErr}}" class="err">{{senderPhoneErr}}</view>
+    <input placeholder="区 / 县" value="{{sender.district}}" data-who="sender" data-k="district" bindinput="onField" />
+    <textarea class="area" placeholder="详细地址，可粘贴整段地址自动拆分" value="{{sender.detail}}" data-who="sender" data-k="detail" bindinput="onField" auto-height />
+  </view>
+
+  <view class="card">
+    <view class="card-hd">
+      <text>收件人（上门派送）</text>
+      <text class="link" data-who="receiver" bindtap="paste">粘贴识别</text>
+    </view>
+    <view class="locked">{{toLabel || '到达城市'}}</view>
+    <input placeholder="姓名" value="{{receiver.name}}" data-who="receiver" data-k="name" bindinput="onField" />
+    <input placeholder="11位手机号" type="number" maxlength="11" value="{{receiver.phone}}" data-who="receiver" data-k="phone" bindinput="onField" />
+    <view wx:if="{{receiverPhoneErr}}" class="err">{{receiverPhoneErr}}</view>
+    <input placeholder="区 / 县" value="{{receiver.district}}" data-who="receiver" data-k="district" bindinput="onField" />
+    <textarea class="area" placeholder="详细地址，可粘贴整段地址自动拆分" value="{{receiver.detail}}" data-who="receiver" data-k="detail" bindinput="onField" auto-height />
+  </view>
+  <view class="btn-ghost btn" bindtap="saveBook">保存到地址簿</view>
+  <view class="btn" bindtap="next">下一步：宠物与取件日</view>
+</view>

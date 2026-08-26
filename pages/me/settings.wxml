@@ -1,0 +1,11 @@
+<view class="safe">
+  <view class="card">
+    <view class="row" bindtap="go" data-url="/pages/me/invoice">
+      <text>电子发票</text><text class="muted">></text>
+    </view>
+    <view class="row" bindtap="go" data-url="/pages/legal/agreement">
+      <text>运输协议</text><text class="muted">></text>
+    </view>
+  </view>
+  <view class="btn-ghost btn" bindtap="logout">退出登录</view>
+</view>
