@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=402, initial-scale=1, user-scalable=no" />
+  <title>宠途空运 · 首页</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="../assets/app.css" />
+</head>
+<body data-title="宠途空运" data-tab="home" data-back="none">
+  <div id="app">
+    <img class="home-hero-img" src="../assets/HomepageBanner/z-image_00021.png" alt="" />
+
+    <section class="hero">
+      <div class="kicker">PET AIR · DOOR TO DOOR</div>
+      <h1>把爱宠，安全送到<br>下一座城</h1>
+      <p>只做空运门到门。填好寄收地址再估价，全程不跳转其他快递小程序。</p>
+      <div class="hero-chips">
+        <span class="chip white">一单一只宠物</span>
+        <span class="chip white">上门取件</span>
+        <span class="chip white">承运询价</span>
+      </div>
+    </section>
+
+    <div class="card route-card">
+      <div class="city-pair">
+        <div class="city-col" data-go="sheet:from">
+          <div class="lbl">出发</div>
+          <div class="name" data-city="from">杭州</div>
+          <div class="faint mt-8">浙江省</div>
+        </div>
+        <div class="swap" id="swapCity"><i class="ri-arrow-left-right-line"></i></div>
+        <div class="city-col right" data-go="sheet:to">
+          <div class="lbl">到达</div>
+          <div class="name" data-city="to">成都</div>
+          <div class="faint mt-8">四川省</div>
+        </div>
+      </div>
+      <button class="btn mt-16" id="goBook"><i class="ri-plane-line"></i> 去寄宠</button>
+    </div>
+
+    <div class="trust">
+      <div class="card">
+        <i class="ri-home-heart-line"></i>
+        <div class="t">门到门</div>
+        <div class="s">取件到派送</div>
+      </div>
+      <div class="card">
+        <i class="ri-shield-check-line"></i>
+        <div class="t">可保价</div>
+        <div class="s">声明价值</div>
+      </div>
+      <div class="card">
+        <i class="ri-exchange-dollar-line"></i>
+        <div class="t">不跳转</div>
+        <div class="s">本店收款</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin: 0 16px 12px;">
+      <div class="row mb-12">
+        <div class="h2">寄宠只需 5 步</div>
+        <span class="link" data-go="cities.html">查看城市</span>
+      </div>
+      <div class="steps">
+        <div class="step on"><div class="n">1</div>选城市</div>
+        <div class="step"><div class="n">2</div>填地址</div>
+        <div class="step"><div class="n">3</div>估价</div>
+        <div class="step"><div class="n">4</div>补资料</div>
+        <div class="step"><div class="n">5</div>支付</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin: 0 16px 12px;">
+      <div class="h2 mb-12">可加购服务</div>
+      <div class="svc-grid">
+        <div class="svc">
+          <i class="ri-box-3-line"></i>
+          <b>购买航空箱</b>
+          <span>按承运方尺寸推荐，不租箱</span>
+        </div>
+        <div class="svc">
+          <i class="ri-file-text-line"></i>
+          <b>代办检疫</b>
+          <span>也可自备证明上传</span>
+        </div>
+        <div class="svc">
+          <i class="ri-shield-star-line"></i>
+          <b>运单保价</b>
+          <span>按声明价值计费</span>
+        </div>
+        <div class="svc">
+          <i class="ri-calendar-check-line"></i>
+          <b>自选取件日</b>
+          <span>时段由承运方安排</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin: 0 16px 28px;">
+      <div class="h2">服务说明</div>
+      <p class="sub mt-8">上门取件日期由你选，具体时段和航班按承运方可约时间安排。报价含门到门空运，支付给本服务商，不跳转其他小程序。</p>
+    </div>
+
+    <div class="resume" data-go="addresses.html">
+      <i class="ri-time-line"></i>
+      <div style="flex:1">未完成的寄宠 · 杭州 → 成都，继续填写地址</div>
+      <div class="x" onclick="event.stopPropagation(); this.parentElement.remove();"><i class="ri-close-line"></i></div>
+    </div>
+  </div>
+  <script src="../assets/app.js"></script>
+</body>
+</html>

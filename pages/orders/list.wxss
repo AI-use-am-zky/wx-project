@@ -1,11 +1,66 @@
-.tabs { white-space: nowrap; padding: 8rpx 8rpx 16rpx; }
+.tabs {
+  white-space: nowrap;
+  padding: 4rpx 0 20rpx;
+  margin: 0 -8rpx;
+}
 .tab {
   display: inline-block;
-  padding: 10rpx 28rpx;
-  margin-right: 12rpx;
-  border-radius: 32rpx;
+  padding: 14rpx 28rpx;
+  margin: 0 8rpx;
+  border-radius: 999rpx;
   background: #fff;
-  color: #6b746e;
+  color: #7a847e;
   font-size: 26rpx;
 }
-.tab.on { background: #2d5a4a; color: #fff; }
+.tab.on {
+  background: #1e4d3e;
+  color: #fff;
+  font-weight: 600;
+}
+.login-card { text-align: center; padding: 48rpx 32rpx; }
+.order {
+  display: flex;
+  gap: 24rpx;
+  align-items: flex-start;
+}
+.avatar {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 32rpx;
+  background: #e7f0eb;
+  flex-shrink: 0;
+}
+.avatar.ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  color: #2d6a55;
+  font-weight: 700;
+}
+.meta { flex: 1; min-width: 0; }
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12rpx;
+}
+.pet {
+  font-weight: 650;
+  font-size: 30rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.path {
+  font-size: 24rpx;
+  color: #7a847e;
+  margin-top: 6rpx;
+}
+.bot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 16rpx;
+}
+.order .price { font-size: 32rpx; }

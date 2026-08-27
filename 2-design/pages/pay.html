@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=402, initial-scale=1, user-scalable=no" />
+  <title>确认支付</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="../assets/app.css" />
+</head>
+<body data-title="确认支付" data-back="fulfill.html">
+  <div id="app">
+    <div class="pad" style="padding-bottom:0">
+      <div class="card quote-hero">
+        <div class="chip">支付给本服务商 · 不跳转</div>
+        <div class="mt-12 faint">奶茶 · 英短 4.5kg · 杭州 → 成都</div>
+        <div class="mt-12"><span class="yen">¥</span><span class="num">1580.00</span></div>
+      </div>
+
+      <div class="card">
+        <div class="h2 mb-8">订单摘要</div>
+        <div class="info-kv"><span>寄件</span><b>陈七 135****5005</b></div>
+        <div class="info-kv"><span>地址</span><b>杭州西湖 华星时代广场</b></div>
+        <div class="info-kv"><span>收件</span><b>李四 139****9002</b></div>
+        <div class="info-kv"><span>取件日</span><b>08月29日</b></div>
+        <div class="info-kv"><span>航空箱</span><b>自备</b></div>
+        <div class="info-kv"><span>检疫</span><b>自备证明</b></div>
+        <div class="info-kv"><span>保价</span><b>不保价</b></div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div class="row gap-12">
+            <i class="ri-wechat-pay-fill" style="font-size:28px;color:#09bb07"></i>
+            <div>
+              <div class="h2" style="font-size:15px">微信支付</div>
+              <div class="faint">模拟支付 · 演示环境</div>
+            </div>
+          </div>
+          <i class="ri-checkbox-circle-fill" style="color:var(--forest-2);font-size:20px"></i>
+        </div>
+      </div>
+
+      <button class="btn btn-ghost" id="authPhone" style="margin-top:12px">授权手机号</button>
+
+      <div class="card" style="margin-top:12px">
+        <div class="row" style="align-items:flex-start">
+          <div class="switch on" id="agree"></div>
+          <div class="sub" style="flex:1">
+            已阅读并同意
+            <span class="link" data-go="agreement.html">《运输服务协议》</span>
+            。取件日前未出运单可全额取消；已揽收不予退款。
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="paybar">
+      <div>
+        <div class="faint">实付</div>
+        <div class="price" style="font-size:22px">¥1,580.00</div>
+      </div>
+      <button class="btn" id="doPay">确认并支付</button>
+    </div>
+  </div>
+  <script src="../assets/app.js"></script>
+</body>
+</html>

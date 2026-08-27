@@ -1,10 +1,10 @@
-input { border-bottom: 1rpx solid #eee; padding: 16rpx 0; }
-.area {
-  margin-top: 8rpx;
-  min-height: 120rpx;
-  padding: 12rpx 0;
-  border-bottom: 1rpx solid #eee;
-  width: 100%;
-  box-sizing: border-box;
-  font-size: 28rpx;
+.pick-val { font-weight: 600; margin-top: 4rpx; }
+.footer-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, transparent, #f3efe8 30%);
 }
+.footer-bar .btn { margin-top: 0; }

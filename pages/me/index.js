@@ -7,8 +7,6 @@ Page({
   data: {
     loggedIn: false,
     phone: '',
-    hours: '09:00~21:00',
-    phoneCs: '',
     padTop: 0,
     navH: 32,
     navPad: 24,
@@ -27,12 +25,9 @@ Page({
   onShow() {
     if (isPickingMedia()) return
     const user = wx.getStorageSync('user') || {}
-    const settings = getApp().globalData.settings || {}
     this.setData({
       loggedIn: isLoggedIn(),
-      phone: user.phone || '',
-      phoneCs: settings.customerServicePhone || '',
-      hours: settings.customerServiceHours || '09:00~21:00'
+      phone: user.phone || ''
     })
     this.loadBadges()
     logOp('open_me', {})
@@ -79,13 +74,5 @@ Page({
   },
   goPage(e) {
     go(e.currentTarget.dataset.url)
-  },
-  call() {
-    const phone = this.data.phoneCs
-    if (!phone) {
-      wx.showToast({ title: '暂未配置客服电话', icon: 'none' })
-      return
-    }
-    wx.makePhoneCall({ phoneNumber: phone })
   }
 })

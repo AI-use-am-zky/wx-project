@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=402, initial-scale=1, user-scalable=no" />
+  <title>报价结果</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="../assets/app.css" />
+</head>
+<body data-title="估价明细" data-back="pet-quote.html">
+  <div id="app">
+    <div class="pad" style="padding-bottom:0">
+      <div class="card quote-hero">
+        <div class="chip gold">承运询价 + 服务费</div>
+        <div class="mt-12 faint">杭州 → 成都 · 英短 4.5kg · 08月29日取件</div>
+        <div class="mt-12"><span class="yen">¥</span><span class="num" id="totalYuan">1580.00</span></div>
+        <div class="sub">应付（门到门），可加购箱 / 检疫 / 保价</div>
+      </div>
+
+      <div class="card">
+        <div class="h2 mb-8">费用拆分</div>
+        <div class="line"><span class="muted">承运运费</span><span>¥1,200.00</span></div>
+        <div class="line"><span class="muted">服务费（含加价 15%）</span><span>¥380.00</span></div>
+        <div class="line" style="border:none"><span>小计</span><span class="price">¥1,580.00</span></div>
+      </div>
+
+      <div class="card">
+        <div class="h2 mb-8">加购</div>
+        <div class="addon">
+          <div class="txt">
+            <b>购买航空箱</b>
+            <span class="sub">不租箱。关闭则为自备并在下一步上传箱照。</span>
+            <div class="crate-opt hide" id="crateBox">
+              <span>小型 55cm · ¥268</span>
+              <span class="on">中型 68cm · ¥388</span>
+              <span>大型 81cm · ¥528</span>
+            </div>
+          </div>
+          <div>
+            <div class="faint" id="cratePrice" style="text-align:right;margin-bottom:6px">自备</div>
+            <div class="switch" id="swCrate"></div>
+          </div>
+        </div>
+        <div class="addon">
+          <div class="txt">
+            <b>代办检疫</b>
+            <span class="sub">代办 ¥200。关闭则需自备检疫证明。</span>
+          </div>
+          <div>
+            <div class="faint" id="agencyPrice" style="text-align:right;margin-bottom:6px">自备证明</div>
+            <div class="switch" id="swAgency"></div>
+          </div>
+        </div>
+        <div class="addon">
+          <div class="txt">
+            <b>顺丰保价</b>
+            <span class="sub">按声明价值约 1% 计费，最低 ¥1。</span>
+            <div class="field hide" id="insureBox" style="padding-top:8px">
+              <label>声明价值（元）</label>
+              <input id="declared" type="number" value="3000" />
+            </div>
+          </div>
+          <div>
+            <div class="faint" id="insurePrice" style="text-align:right;margin-bottom:6px">不保价</div>
+            <div class="switch" id="swInsure"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="paybar">
+      <div>
+        <div class="faint">应付</div>
+        <div class="price" style="font-size:22px">¥<span id="totalYuanBar">1580.00</span></div>
+      </div>
+      <button class="btn" data-go="fulfill.html">去补资料</button>
+    </div>
+  </div>
+  <script src="../assets/app.js"></script>
+</body>
+</html>

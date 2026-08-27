@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=402, initial-scale=1, user-scalable=no" />
+  <title>检疫资料</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="../assets/app.css" />
+</head>
+<body data-title="检疫资料" data-back="me.html">
+  <div id="app" class="pad pad-b">
+    <p class="sub" style="margin-bottom:12px">可预先上传，下单时仍须按当次要求提交。请保证在有效期内。</p>
+    <div class="card">
+      <div class="row">
+        <div class="row gap-12">
+          <img class="avatar" src="https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=200&q=80" alt="" />
+          <div>
+            <div class="h2" style="font-size:15px">奶茶 · 动物检疫合格证明</div>
+            <div class="faint mt-8">有效期至 2026-09-15</div>
+          </div>
+        </div>
+        <span class="link" data-del-doc>删除</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div class="row gap-12">
+          <img class="avatar" src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=200&q=80" alt="" />
+          <div>
+            <div class="h2" style="font-size:15px">雪球 · 狂犬疫苗本</div>
+            <div class="faint mt-8">上传于 08月12日</div>
+          </div>
+        </div>
+        <span class="link" data-del-doc>删除</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="h2 mb-8">上传新资料</div>
+      <div class="field">
+        <label>资料名称</label>
+        <input id="docTitle" placeholder="如 检疫证、疫苗本" />
+      </div>
+      <button class="btn mt-12" id="uploadDoc">上传图片并保存</button>
+    </div>
+  </div>
+  <script src="../assets/app.js"></script>
+</body>
+</html>

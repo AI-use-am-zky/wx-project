@@ -1,33 +1,70 @@
-<view class="safe">
-  <view class="hint" wx:if="{{isDevTools}}">开发工具里点 + 只在本地添加示例图，不会写入项目目录，避免触发重新编译。</view>
+<view class="safe-b">
   <view class="card">
-    <view>宠物近照（至少 1 张）</view>
+    <view class="steps">
+      <view class="step on"><view class="n">1</view>城市</view>
+      <view class="step on"><view class="n">2</view>地址</view>
+      <view class="step on"><view class="n">3</view>估价</view>
+      <view class="step on"><view class="n">4</view>资料</view>
+      <view class="step"><view class="n">5</view>支付</view>
+    </view>
+  </view>
+
+  <view class="hint" wx:if="{{isDevTools}}">开发工具里点 + 只在本地添加示例图，不会写入项目目录，避免触发重新编译。</view>
+
+  <view class="card">
+    <view class="row-plain">
+      <view class="h2">宠物近照</view>
+      <text class="chip">至少 1 张</text>
+    </view>
+    <view class="sub mt-8">清晰正面或全身，便于承运核验。</view>
     <view class="photos">
       <image wx:for="{{petPhotos}}" wx:key="*this" class="ph" src="{{item}}" mode="aspectFill" lazy-load />
-      <view class="add" bindtap="addPet">+</view>
+      <view class="add" bindtap="addPet"><text class="add-plus">+</text>添加</view>
     </view>
   </view>
+
   <view class="card" wx:if="{{crateMode==='own'}}">
-    <view>自备航空箱照片</view>
+    <view class="row-plain">
+      <view class="h2">自备航空箱</view>
+      <text class="chip chip-gold">当前：自备</text>
+    </view>
+    <view class="sub mt-8">请拍摄箱体侧面，需能看清尺寸与通风口。</view>
     <view class="photos">
       <image wx:for="{{cratePhotos}}" wx:key="*this" class="ph" src="{{item}}" mode="aspectFill" />
-      <view class="add" bindtap="addCrate">+</view>
+      <view class="add" bindtap="addCrate"><text class="add-plus">+</text>上传箱照</view>
     </view>
   </view>
+
   <view class="card" wx:if="{{quarantineMode==='self'}}">
-    <view>检疫证明</view>
+    <view class="row-plain">
+      <view class="h2">检疫证明</view>
+      <text class="chip">自备上传</text>
+    </view>
+    <view class="sub mt-8">动物检疫合格证明，有效期内。</view>
     <view class="photos">
       <image wx:for="{{quarantinePhotos}}" wx:key="*this" class="ph" src="{{item}}" mode="aspectFill" />
-      <view class="add" bindtap="addQuar">+</view>
+      <view class="add" bindtap="addQuar"><text class="add-plus">+</text>添加</view>
     </view>
   </view>
+
   <view class="card" wx:if="{{quarantineMode==='agency'}}">
-    <view>代办检疫信息</view>
-    <input placeholder="办理人姓名" value="{{agency.name}}" data-k="name" bindinput="onAgency" />
-    <input placeholder="电话" value="{{agency.phone}}" data-k="phone" bindinput="onAgency" />
-    <input placeholder="宠物名" value="{{agency.petName}}" data-k="petName" bindinput="onAgency" />
+    <view class="h2">代办检疫信息</view>
+    <view class="field">
+      <view class="field-label">办理人姓名</view>
+      <input placeholder="办理人姓名" value="{{agency.name}}" data-k="name" bindinput="onAgency" />
+    </view>
+    <view class="field">
+      <view class="field-label">电话</view>
+      <input placeholder="电话" value="{{agency.phone}}" data-k="phone" bindinput="onAgency" />
+    </view>
+    <view class="field">
+      <view class="field-label">宠物名</view>
+      <input placeholder="宠物名" value="{{agency.petName}}" data-k="petName" bindinput="onAgency" />
+    </view>
   </view>
-  <view class="btn" bindtap="next">去支付</view>
+</view>
+<view class="footer-bar">
+  <view class="btn" bindtap="next">资料齐全，去支付</view>
 </view>
 
 <view class="cam-mask" wx:if="{{cameraOn}}">
@@ -37,3 +74,4 @@
     <view class="cam-btn" bindtap="takeCam">拍照</view>
   </view>
 </view>
+

@@ -1,12 +1,32 @@
 <view class="safe">
-  <view class="card muted">请从已签收订单填写抬头。支付后可填，签收后才开具。</view>
+  <view class="card tip">
+    <view class="sub">支付后可填抬头，<text style="font-weight:650">签收后才开具</text>。退款未完成的订单不能开票。</view>
+  </view>
+  <view class="empty card" wx:if="{{!list.length}}">暂无可开票订单</view>
   <view class="card" wx:for="{{list}}" wx:key="id">
-    <view>{{item.id}}</view>
-    <view class="muted">{{item.statusText}} ¥{{item.paidYuan}}</view>
-    <input placeholder="发票抬头" data-id="{{item.id}}" data-k="title" bindinput="onF" />
-    <input placeholder="税号（企业）" data-id="{{item.id}}" data-k="taxNo" bindinput="onF" />
-    <input placeholder="接收邮箱" data-id="{{item.id}}" data-k="email" bindinput="onF" />
-    <view class="btn" data-id="{{item.id}}" bindtap="save">保存抬头</view>
-    <view class="btn-ghost btn" wx:if="{{item.status==='signed'}}" data-id="{{item.id}}" bindtap="issue">申请开具</view>
+    <view class="row-plain mb-8">
+      <view>
+        <view class="h2" style="font-size:30rpx">{{item.petName || item.breed || '订单'}} · {{item.fromCity}} → {{item.toCity}}</view>
+        <view class="faint mt-8">{{item.statusText}} · ¥{{item.paidYuan}}</view>
+      </view>
+      <text class="st {{item.status==='signed'?'st-done':'st-wait'}}">{{item.status==='signed'?'可开具':'待签收'}}</text>
+    </view>
+    <view class="field">
+      <view class="field-label">发票抬头</view>
+      <input placeholder="个人姓名或公司名称" data-id="{{item.id}}" data-k="title" bindinput="onF" />
+    </view>
+    <view class="field">
+      <view class="field-label">税号（企业）</view>
+      <input placeholder="统一社会信用代码" data-id="{{item.id}}" data-k="taxNo" bindinput="onF" />
+    </view>
+    <view class="field">
+      <view class="field-label">接收邮箱</view>
+      <input placeholder="name@company.com" data-id="{{item.id}}" data-k="email" bindinput="onF" />
+    </view>
+    <view class="btn-row mt-12">
+      <view class="btn btn-ghost" data-id="{{item.id}}" bindtap="save">保存抬头</view>
+      <view class="btn" wx:if="{{item.status==='signed'}}" data-id="{{item.id}}" bindtap="issue">申请开具</view>
+    </view>
   </view>
 </view>
+

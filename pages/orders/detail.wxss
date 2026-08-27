@@ -1,1 +1,46 @@
-.tl { padding: 16rpx 0; border-bottom: 1rpx solid #eef1ef; font-size: 26rpx; }
+.hero-status {
+  background: linear-gradient(160deg, #1b4639, #2d6a55);
+  color: #fff;
+}
+.hero-title { color: #fff; margin-top: 24rpx; }
+.hero-desc {
+  margin-top: 16rpx;
+  opacity: 0.8;
+  font-size: 26rpx;
+  line-height: 1.55;
+}
+.hero-paid { opacity: 0.8; font-size: 24rpx; }
+.waybill {
+  margin-top: 32rpx;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 24rpx;
+  padding: 20rpx 24rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.waybill-no { font-weight: 650; letter-spacing: 1rpx; }
+.ship {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+.ship-col { flex: 1; min-width: 0; }
+.ship-col.right { text-align: right; }
+.ship-arrow { color: #a3aba6; padding-top: 40rpx; }
+.pet-row { display: flex; align-items: center; gap: 24rpx; }
+.avatar {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 32rpx;
+  background: #e7f0eb;
+  flex-shrink: 0;
+}
+.avatar.ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2d6a55;
+  font-weight: 700;
+}
+.mt-12 { margin-top: 24rpx; }

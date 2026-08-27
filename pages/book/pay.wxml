@@ -1,15 +1,51 @@
-<view class="safe">
-  <view class="card">
-    <view class="muted">支付给本服务商，不跳转其他小程序</view>
-    <view class="price" style="margin-top:12rpx">请确认资料无误后支付</view>
+<view class="safe" style="padding-bottom: 180rpx;">
+  <view class="card quote-hero">
+    <text class="chip">支付给本服务商 · 不跳转</text>
+    <view class="faint mt-12">{{summary.pet}}</view>
+    <view class="mt-12">
+      <text class="yen">¥</text><text class="num">{{summary.totalYuan}}</text>
+    </view>
   </view>
+
   <view class="card">
-    <label>
-      <checkbox checked="{{agreed}}" bindtap="toggle" />
-      已阅读并同意
-    </label>
-    <text class="link" bindtap="openAgree">《运输服务协议》</text>
+    <view class="h2 mb-8">订单摘要</view>
+    <view class="info-kv"><text class="k">寄件</text><text class="v">{{summary.sender}}</text></view>
+    <view class="info-kv"><text class="k">地址</text><text class="v">{{summary.senderAddr}}</text></view>
+    <view class="info-kv"><text class="k">收件</text><text class="v">{{summary.receiver}}</text></view>
+    <view class="info-kv"><text class="k">取件日</text><text class="v">{{summary.pickupDate}}</text></view>
+    <view class="info-kv"><text class="k">航空箱</text><text class="v">{{summary.crate}}</text></view>
+    <view class="info-kv"><text class="k">检疫</text><text class="v">{{summary.quarantine}}</text></view>
+    <view class="info-kv"><text class="k">保价</text><text class="v">{{summary.insure}}</text></view>
   </view>
-  <button class="phone" open-type="getPhoneNumber" bindgetphonenumber="onPhone" wx:if="{{needPhone}}">授权手机号</button>
-  <view class="btn" bindtap="pay">确认并支付（模拟）</view>
+
+  <view class="card">
+    <view class="row-plain">
+      <view>
+        <view class="h2" style="font-size:30rpx">微信支付</view>
+        <view class="faint">模拟支付 · 演示环境</view>
+      </view>
+      <text class="chip">已选</text>
+    </view>
+  </view>
+
+  <button class="btn btn-ghost phone-btn" open-type="getPhoneNumber" bindgetphonenumber="onPhone" wx:if="{{needPhone}}">授权手机号</button>
+
+  <view class="card">
+    <view class="agree">
+      <view class="switch {{agreed?'on':''}}" bindtap="toggle"></view>
+      <view class="sub" style="flex:1">
+        已阅读并同意
+        <text class="link" bindtap="openAgree">《运输服务协议》</text>
+        。取件日前未出运单可全额取消；已揽收不予退款。
+      </view>
+    </view>
+  </view>
 </view>
+<view class="paybar">
+  <view>
+    <view class="faint">实付</view>
+    <view class="price" style="font-size:44rpx">¥{{summary.totalYuan}}</view>
+  </view>
+  <view class="btn pay-btn" bindtap="pay">确认并支付</view>
+</view>
+

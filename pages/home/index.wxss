@@ -1,57 +1,196 @@
-.hero { background: linear-gradient(160deg, #2d5a4a, #3f7a64); color: #fff; }
-.hero .sub, .hero .h1 { color: #fff; }
-.hero .tag { background: rgba(255,255,255,.18); color: #fff; }
+.home-swiper {
+  width: 100%;
+  height: 375rpx;
+}
+.slide-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 
-.city-row {
+/* 1. 外层容器：负责定位 */
+.btn-wrap {
+  position: fixed;
+  bottom: 150rpx;
+  right: 30rpx;
+  z-index: 999;
+}
+
+/* 2. 按钮样式：改成深绿色背景 */
+.btn {
+  /* 【核心修改】设置深绿色背景 */
+  background-color: #0f5e35 !important; 
+  
+  width: 100rpx !important;
+  height: 100rpx !important;
+  padding: 0 !important;
+  margin: 0;
+  border: none;
+  border-radius: 50%; /* 保持圆形 */
   display: flex;
   align-items: center;
-  padding: 8rpx 0 16rpx;
+  justify-content: center;
+  
+  /* 添加一点阴影增加立体感 */
+  box-shadow: 0 4rpx 12rpx rgba(15, 94, 53, 0.4); 
 }
-.city-pick {
-  flex: 1;
-  min-width: 0;
+
+/* 清除按钮默认边框 */
+.btn::after {
+  border: none;
 }
-.city-pick.right { text-align: right; }
+/* 图片填满按钮 */
+.btn image {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 点击放大动画 */
+.btn:active {
+  transform: scale(1.2);
+  transition: transform 0.15s ease;
+}
+
+.home-body {
+  padding: 8rpx 32rpx 160rpx;
+}
+
+.hero {
+  margin: 8rpx 0 28rpx;
+  padding: 44rpx 36rpx 40rpx;
+  border-radius: 44rpx;
+  background:
+    radial-gradient(circle at 92% 12%, rgba(196, 160, 106, 0.35), transparent 36%),
+    linear-gradient(155deg, #1b4639 0%, #2d6a55 58%, #3d7a62 100%);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.hero .kicker {
+  font-size: 22rpx;
+  letter-spacing: 4rpx;
+  opacity: 0.75;
+  font-weight: 500;
+}
+.hero .h1 {
+  color: #fff;
+  font-size: 48rpx;
+  margin-top: 0;
+  line-height: 1.25;
+}
+.hero .kicker + .h1 { margin-top: 12rpx; }
+.hero-sub {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  opacity: 0.78;
+  line-height: 1.55;
+  max-width: 78%;
+}
+.hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 28rpx;
+}
+
+.route-card { padding: 36rpx 32rpx 32rpx; }
+.city-pair {
+  display: flex;
+  align-items: center;
+}
+.city-col { flex: 1; min-width: 0; }
+.city-col.right { text-align: right; }
+.city-col .lbl {
+  font-size: 22rpx;
+  color: #7a847e;
+  letter-spacing: 2rpx;
+}
 .city-name {
   margin-top: 8rpx;
-  font-size: 28rpx;
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: 44rpx;
+  font-weight: 650;
+  letter-spacing: -0.8rpx;
+  line-height: 1.2;
 }
 .swap {
-  width: 64rpx;
-  height: 64rpx;
+  width: 72rpx;
+  height: 72rpx;
   margin: 0 12rpx;
   border-radius: 50%;
-  background: #eef4f1;
-  color: #2d5a4a;
+  background: #e7f0eb;
+  color: #1e4d3e;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 32rpx;
   flex-shrink: 0;
 }
-.resume {
-  position: fixed;
-  left: 28rpx;
-  right: 28rpx;
-  bottom: 24rpx;
-  background: #2d5a4a;
-  color: #fff;
-  border-radius: 48rpx;
-  padding: 20rpx 28rpx;
+
+.trust {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+.trust-item {
+  flex: 1;
+  margin-bottom: 0;
+  padding: 24rpx 12rpx;
+  text-align: center;
+}
+.trust-ico {
+  width: 56rpx;
+  height: 56rpx;
+  margin: 0 auto 8rpx;
+  border-radius: 16rpx;
+  background: #e7f0eb;
+  color: #2d6a55;
   display: flex;
   align-items: center;
-  box-shadow: 0 12rpx 32rpx rgba(45, 90, 74, 0.28);
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+.trust .t { font-size: 24rpx; font-weight: 600; }
+.trust .s { font-size: 20rpx; color: #7a847e; margin-top: 4rpx; }
+
+.svc-grid {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -10rpx;
+}
+.svc {
+  width: calc(50% - 20rpx);
+  margin: 10rpx;
+  background: #f2f7f4;
+  border-radius: 28rpx;
+  padding: 24rpx;
+  box-sizing: border-box;
+}
+.svc-t { font-size: 26rpx; font-weight: 650; }
+.svc-s { font-size: 22rpx; color: #7a847e; margin-top: 8rpx; }
+
+.resume {
+  position: fixed;
+  left: 32rpx;
+  right: 32rpx;
+  bottom: 24rpx;
+  background: #1e4d3e;
+  color: #fff;
+  border-radius: 48rpx;
+  padding: 24rpx 28rpx;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 24rpx 56rpx rgba(30, 77, 62, 0.32);
   z-index: 20;
 }
 .resume-txt { flex: 1; font-size: 26rpx; }
 .resume-x {
-  width: 48rpx;
-  height: 48rpx;
+  width: 56rpx;
+  height: 56rpx;
   margin-left: 12rpx;
   border-radius: 50%;
-  background: rgba(255,255,255,.16);
+  background: rgba(255, 255, 255, 0.16);
   display: flex;
   align-items: center;
   justify-content: center;

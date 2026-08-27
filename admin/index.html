@@ -60,7 +60,6 @@
           <label>加价比例 <input id="markup_rate" /></label>
           <label>最低服务费(分) <input id="min_service_fee_cents" /></label>
           <label>取消手续费(分) <input id="cancel_fee_before_collect_cents" /></label>
-          <label>客服电话 <input id="customer_service_phone" /></label>
           <button onclick="saveSettings()">保存</button>
         </div>
       </div>
@@ -132,13 +131,13 @@
     }
     async function loadSettings() {
       const r = await req('/admin/settings')
-      for (const k of ['markup_rate','min_service_fee_cents','cancel_fee_before_collect_cents','customer_service_phone']) {
+      for (const k of ['markup_rate','min_service_fee_cents','cancel_fee_before_collect_cents']) {
         if (document.getElementById(k)) document.getElementById(k).value = r.data[k] || ''
       }
     }
     async function saveSettings() {
       const body = {}
-      for (const k of ['markup_rate','min_service_fee_cents','cancel_fee_before_collect_cents','customer_service_phone']) {
+      for (const k of ['markup_rate','min_service_fee_cents','cancel_fee_before_collect_cents']) {
         body[k] = document.getElementById(k).value
       }
       await req('/admin/settings', { method:'PUT', body: JSON.stringify(body) })

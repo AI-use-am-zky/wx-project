@@ -1,11 +1,21 @@
-<view class="safe">
-  <view class="card muted" wx:if="{{!list.length}}">还没有宠物档案，下单前可先在这里维护</view>
-  <view class="card" wx:for="{{list}}" wx:key="id">
-    <view class="row">
-      <text>{{item.name}} · {{item.breed || item.species || '未填品种'}}</text>
-      <text class="muted" data-id="{{item.id}}" catchtap="del">删除</text>
-    </view>
-    <view class="muted">{{item.weight_kg ? (item.weight_kg + 'kg') : ''}} {{item.gender || ''}}</view>
+<view class="safe-b">
+  <view class="empty card" wx:if="{{!list.length}}">
+    <view class="h2">还没有宠物档案</view>
+    <view class="sub mt-8">下单前可先在这里维护，估价时更方便。</view>
   </view>
+  <view class="card pet-card" wx:for="{{list}}" wx:key="id">
+    <view class="ava">{{item.name ? item.name[0] : '宠'}}</view>
+    <view class="grow">
+      <view class="row-plain">
+        <view class="h2" style="font-size:32rpx">{{item.name}}</view>
+        <text class="chip">{{item.species || '未填种类'}}</text>
+      </view>
+      <view class="sub mt-8">{{item.breed || '未填品种'}}{{item.weight_kg ? ' · ' + item.weight_kg + 'kg' : ''}}{{item.gender ? ' · ' + item.gender : ''}}</view>
+    </view>
+    <text class="link" data-id="{{item.id}}" catchtap="del">删除</text>
+  </view>
+</view>
+<view class="footer-bar">
   <view class="btn" bindtap="add">添加宠物</view>
 </view>
+

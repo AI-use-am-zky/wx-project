@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=402, initial-scale=1, user-scalable=no" />
+  <title>订单详情</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="../assets/app.css" />
+</head>
+<body data-title="订单详情" data-back="orders.html">
+  <div id="app" class="pad-b pad">
+    <div class="card" style="background:linear-gradient(160deg,#1b4639,#2d6a55);color:#fff">
+      <div class="row">
+        <span class="chip white">运输中</span>
+        <span style="opacity:.8;font-size:12px">已支付 ¥1,860.00</span>
+      </div>
+      <div class="h1 mt-12" style="color:#fff">奶茶正在飞往成都</div>
+      <p class="mt-8" style="opacity:.8;font-size:13px;max-width:90%">航班运输中，到达后将上门派送。可复制运单号向承运方查询路由。</p>
+      <div class="row mt-16" id="copyWaybill" style="background:rgba(255,255,255,.12);border-radius:12px;padding:10px 12px;cursor:pointer">
+        <div>
+          <div style="font-size:11px;opacity:.7">顺丰运单</div>
+          <div style="font-weight:650;letter-spacing:.4px">SF2659180327</div>
+        </div>
+        <span style="font-size:13px">复制</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="h2">进度时间轴</div>
+      <div class="tl mt-12">
+        <div class="tl-item on">
+          <div class="t">航班运输中</div>
+          <div class="d">08月27日 09:20 · 萧山机场出港</div>
+        </div>
+        <div class="tl-item">
+          <div class="t">宠物已揽收</div>
+          <div class="d">08月27日 07:05 · 西湖区上门取件</div>
+        </div>
+        <div class="tl-item">
+          <div class="t">已预约上门</div>
+          <div class="d">08月26日 18:12 · 取件日 08月27日</div>
+        </div>
+        <div class="tl-item">
+          <div class="t">支付成功并向承运方下单</div>
+          <div class="d">08月26日 18:11</div>
+        </div>
+        <div class="tl-item">
+          <div class="t">订单已创建</div>
+          <div class="d">08月26日 18:04</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="h2 mb-12">寄收信息</div>
+      <div class="row" style="align-items:flex-start">
+        <div>
+          <div class="faint">寄</div>
+          <div class="h2" style="font-size:15px">陈七 135****5005</div>
+          <div class="sub">杭州市西湖区文三路 478 号</div>
+        </div>
+        <i class="ri-arrow-right-line faint"></i>
+        <div style="text-align:right">
+          <div class="faint">收</div>
+          <div class="h2" style="font-size:15px">李四 139****9002</div>
+          <div class="sub">成都市锦江区红星路三段 1 号</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row mb-8">
+        <div class="h2">宠物</div>
+        <span class="chip">英短 · 4.5kg</span>
+      </div>
+      <div class="row gap-12">
+        <img class="avatar" src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&q=80" alt="" />
+        <div>
+          <div style="font-weight:650">奶茶</div>
+          <div class="sub">轻微分离焦虑，取件时请轻声</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-danger mt-12" id="cancelOrder">申请取消（已揽收不可退）</button>
+  </div>
+  <script src="../assets/app.js"></script>
+</body>
+</html>

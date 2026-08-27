@@ -1,11 +1,18 @@
 <view class="safe">
   <view class="card">
-    <view class="row" bindtap="go" data-url="/pages/me/invoice">
-      <text>电子发票</text><text class="muted">></text>
+    <view class="pick-row" bindtap="go" data-url="/pages/me/invoice">
+      <text>电子发票</text>
+      <text class="muted">签收后开具 ›</text>
     </view>
-    <view class="row" bindtap="go" data-url="/pages/legal/agreement">
-      <text>运输协议</text><text class="muted">></text>
+    <view class="pick-row" bindtap="go" data-url="/pages/legal/agreement">
+      <text>运输服务协议</text>
+      <text class="muted">v1 ›</text>
+    </view>
+    <view class="pick-row" bindtap="about">
+      <text>关于宠途空运</text>
+      <text class="muted">v0.1</text>
     </view>
   </view>
-  <view class="btn-ghost btn" bindtap="logout">退出登录</view>
+  <view class="btn btn-ghost" bindtap="logout">退出登录</view>
 </view>
+

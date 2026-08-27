@@ -1,6 +1,23 @@
 <view class="safe">
-  <view class="card">
-    <view>暂无可用卡券</view>
-    <view class="muted" style="margin-top:12rpx">第一期不包含营销红包，入口先保留，避免和「我的」结构对不齐。</view>
+  <scroll-view class="tabs" scroll-x>
+    <view class="tab on">可使用</view>
+    <view class="tab dim">已过期</view>
+  </scroll-view>
+  <view class="empty card">
+    <view class="h2">暂无可用卡券</view>
+    <view class="sub mt-8">第一期不包含营销红包。入口已保留，避免和「我的」结构对不齐。</view>
+  </view>
+  <view class="faint" style="margin:8rpx 8rpx 16rpx">示例（不可用）</view>
+  <view class="coupon">
+    <view class="left">
+      <text class="yen">¥</text>
+      <text class="num">50</text>
+    </view>
+    <view class="body">
+      <view class="h2" style="font-size:30rpx">新客寄宠券</view>
+      <view class="sub mt-8">满 800 可用 · 不可与保价同享</view>
+      <view class="faint mt-8">示例券，不可核销</view>
+    </view>
   </view>
 </view>
+

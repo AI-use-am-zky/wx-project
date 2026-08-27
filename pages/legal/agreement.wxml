@@ -1,8 +1,10 @@
 <view class="safe">
   <view class="card">
-    <view class="h1">运输服务协议（v1 占位）</view>
-    <view class="sub" style="margin-top:20rpx">
+    <view class="h1">运输服务协议</view>
+    <view class="chip" style="margin-top:16rpx">v1 占位</view>
+    <view class="sub" style="margin-top:24rpx">
       本服务由公司主体向宠主收取费用，并代为向承运方下达宠物空运门到门订单。寄件人、收件人为实际交接人。取件日前未生成运单可全额取消；已生成运单未揽收将扣除手续费；已揽收不予退款。复秤相差 1kg 以内不作补差。保价以承运方声明价值规则为准。检疫证件与航空箱由宠主自备或选择加购代办 / 买箱。本页文案待法务替换后上线。
     </view>
   </view>
 </view>
+

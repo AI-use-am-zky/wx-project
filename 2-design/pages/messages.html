@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=402, initial-scale=1, user-scalable=no" />
+  <title>消息</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="../assets/app.css" />
+</head>
+<body data-title="消息" data-back="me.html">
+  <div id="app" class="pad">
+    <div class="card msg" data-go="order-detail.html">
+      <div class="ico" style="background:#2d6a55"><i class="ri-plane-line"></i></div>
+      <div class="grow">
+        <div class="row">
+          <div class="h2" style="font-size:15px">奶茶已揽收</div>
+          <span class="dot"></span>
+        </div>
+        <div class="sub mt-8">08月27日 07:05 上门取件完成，正在送往机场。</div>
+        <div class="faint mt-8">07:06</div>
+      </div>
+    </div>
+    <div class="card msg" data-go="surcharge.html">
+      <div class="ico" style="background:#c4a06a"><i class="ri-error-warning-line"></i></div>
+      <div class="grow">
+        <div class="row">
+          <div class="h2" style="font-size:15px">土豆需补差 ¥168</div>
+          <span class="dot"></span>
+        </div>
+        <div class="sub mt-8">上门复秤 10.0kg，超出下单重量 1.4kg。</div>
+        <div class="faint mt-8">昨天</div>
+      </div>
+    </div>
+    <div class="card msg" data-go="order-detail.html">
+      <div class="ico" style="background:#3b82c4"><i class="ri-checkbox-circle-line"></i></div>
+      <div class="grow">
+        <div class="h2" style="font-size:15px">阿福已签收</div>
+        <div class="sub mt-8">收件人李四已签收，可申请电子发票。</div>
+        <div class="faint mt-8">08月18日</div>
+      </div>
+    </div>
+    <p class="hours" style="margin-top:20px">取件、异常、签收将走订阅消息，可在支付时开启。</p>
+  </div>
+  <script src="../assets/app.js"></script>
+</body>
+</html>

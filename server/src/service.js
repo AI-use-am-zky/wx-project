@@ -273,7 +273,7 @@ export async function markPaidAndSubmitSf({ orderId, sf, notify }) {
 
 export async function cancelOrder({ order, sf, wechat }) {
   if (isCollectedOrAfter(order.status)) {
-    const err = new Error('已揽收不可自助退款，请联系客服改期')
+    const err = new Error('已揽收不可自助退款，请走改期流程')
     err.status = 400
     throw err
   }
@@ -296,7 +296,7 @@ export async function cancelOrder({ order, sf, wechat }) {
     } catch (e) {
       db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.CANCEL_REQUESTED, nowIso(), order.id)
       addEvent(order.id, 'cancel_requested', '已申请取消，顺丰撤单失败，待人工处理')
-      const err = new Error('顺丰暂无法撤单，已转人工，请等待客服')
+      const err = new Error('顺丰暂无法撤单，已转人工处理')
       err.status = 409
       throw err
     }

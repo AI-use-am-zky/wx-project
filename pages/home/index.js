@@ -6,8 +6,15 @@ const { isPickingMedia, clearMediaPick } = require('../../utils/media-pick')
 
 Page({
   data: {
+	swiperList: [
+      { id: 0, url: '/2-design/assets/banner/1.jpg' },
+      { id: 1, url: '/2-design/assets/banner/2.jpg' },
+      { id: 2, url: '/2-design/assets/banner/3.jpg' }
+    ],
     fromName: '',
     toName: '',
+    fromProvince: '省 / 市',
+    toProvince: '省 / 市',
     fromRange: [PROVINCE_NAMES, TREE[0].cities],
     toRange: [PROVINCE_NAMES, TREE[0].cities],
     fromIndex: [0, 0],
@@ -25,8 +32,10 @@ Page({
     const fromPick = pickerFromCity(b.fromCity)
     const toPick = pickerFromCity(b.toCity)
     this.setData({
-      fromName: cityLabel(b.fromCity),
-      toName: cityLabel(b.toCity),
+      fromName: b.fromCity ? (b.fromCity.name || cityLabel(b.fromCity)) : '',
+      toName: b.toCity ? (b.toCity.name || cityLabel(b.toCity)) : '',
+      fromProvince: b.fromCity ? (b.fromCity.province || '省 / 市') : '省 / 市',
+      toProvince: b.toCity ? (b.toCity.province || '省 / 市') : '省 / 市',
       fromIndex: b.fromCity ? fromPick.index : [0, 0],
       toIndex: b.toCity ? toPick.index : [0, 0],
       fromRange: b.fromCity ? fromPick.range : [PROVINCE_NAMES, TREE[0].cities],

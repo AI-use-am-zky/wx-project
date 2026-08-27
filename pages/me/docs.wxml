@@ -1,13 +1,22 @@
 <view class="safe">
-  <view class="card muted" wx:if="{{!list.length}}">可预先上传检疫证明，下单时仍须按当次要求提交</view>
+  <view class="sub" style="margin-bottom:24rpx">可预先上传检疫证明，下单时仍须按当次要求提交。请保证在有效期内。</view>
+  <view class="empty card" wx:if="{{!list.length}}">暂无资料，可在下方上传。</view>
   <view class="card" wx:for="{{list}}" wx:key="id">
-    <view class="row">
-      <text>{{item.title}}</text>
-      <text class="muted" data-id="{{item.id}}" catchtap="del">删除</text>
+    <view class="row-plain">
+      <view class="grow">
+        <view class="h2" style="font-size:30rpx">{{item.title}}</view>
+        <view class="faint mt-8" wx:if="{{item.created_at}}">上传于 {{item.created_at}}</view>
+      </view>
+      <text class="link" data-id="{{item.id}}" catchtap="del">删除</text>
     </view>
   </view>
   <view class="card">
-    <input placeholder="资料名称（如检疫证）" value="{{title}}" bindinput="onTitle" />
+    <view class="h2 mb-8">上传新资料</view>
+    <view class="field">
+      <view class="field-label">资料名称</view>
+      <input placeholder="如 检疫证、疫苗本" value="{{title}}" bindinput="onTitle" />
+    </view>
     <view class="btn" bindtap="upload">上传图片并保存</view>
   </view>
 </view>
+

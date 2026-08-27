@@ -1,3 +1,7 @@
 <view class="safe">
-  <view class="card muted">暂无系统消息。取件、异常、签收将走订阅消息，可在支付时开启。</view>
+  <view class="empty card">
+    <view class="h2">暂无系统消息</view>
+    <view class="sub mt-8">取件、异常、签收将走订阅消息，可在支付时开启。</view>
+  </view>
 </view>
+

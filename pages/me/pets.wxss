@@ -1,0 +1,28 @@
+.pet-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+.ava {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(160deg, #d8efe6, #b7d4c6);
+  color: #1e4d3e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 32rpx;
+  flex-shrink: 0;
+}
+.grow { flex: 1; min-width: 0; }
+.footer-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, transparent, #f3efe8 30%);
+}
+.footer-bar .btn { margin-top: 0; }

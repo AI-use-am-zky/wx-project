@@ -2,11 +2,15 @@ const { request, yuan } = require('../../utils/request')
 const { requireLoginPage } = require('../../utils/auth')
 
 Page({
-  data: { yuan: '0.00' },
+  data: { yuan: '0.00', declaredWeightKg: '', actualWeightKg: '' },
   onLoad(q) {
     this.id = q.id
     requireLoginPage().then(() => request({ url: '/orders/' + this.id })).then((o) => {
-      this.setData({ yuan: yuan(o.surchargeCents) })
+      this.setData({
+        yuan: yuan(o.surchargeCents),
+        declaredWeightKg: o.declaredWeightKg || '',
+        actualWeightKg: o.actualWeightKg || ''
+      })
     })
   },
   pay() {

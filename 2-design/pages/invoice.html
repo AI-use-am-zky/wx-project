@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=402, initial-scale=1, user-scalable=no" />
+  <title>电子发票</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="../assets/app.css" />
+</head>
+<body data-title="电子发票" data-back="settings.html">
+  <div id="app" class="pad">
+    <div class="card" style="background:var(--gold-soft);box-shadow:none">
+      <div class="sub">支付后可填抬头，<b>签收后才开具</b>。退款未完成的订单不能开票。</div>
+    </div>
+
+    <div class="card">
+      <div class="row mb-8">
+        <div>
+          <div class="h2" style="font-size:15px">阿福 · 广州 → 武汉</div>
+          <div class="faint mt-8">已签收 · ¥1,560.00</div>
+        </div>
+        <span class="st st-done">可开具</span>
+      </div>
+      <div class="field"><label>发票抬头</label><input value="杭州宠途网络科技有限公司" /></div>
+      <div class="field"><label>税号（企业）</label><input value="91330100MA2HXXXXX" /></div>
+      <div class="field"><label>接收邮箱</label><input value="finance@example.com" /></div>
+      <div class="btn-row mt-12">
+        <button class="btn btn-ghost sm" data-save-inv>保存抬头</button>
+        <button class="btn sm" data-issue-inv>申请开具</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row mb-8">
+        <div>
+          <div class="h2" style="font-size:15px">奶茶 · 杭州 → 成都</div>
+          <div class="faint mt-8">运输中 · ¥1,860.00</div>
+        </div>
+        <span class="st st-wait">待签收</span>
+      </div>
+      <div class="field"><label>发票抬头</label><input placeholder="个人姓名或公司名称" /></div>
+      <div class="field"><label>税号（企业选填）</label><input placeholder="统一社会信用代码" /></div>
+      <div class="field"><label>接收邮箱</label><input placeholder="name@company.com" /></div>
+      <button class="btn btn-ghost sm mt-12" data-save-inv>保存抬头</button>
+    </div>
+  </div>
+  <script src="../assets/app.js"></script>
+</body>
+</html>

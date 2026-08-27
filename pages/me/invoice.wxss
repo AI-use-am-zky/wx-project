@@ -1,0 +1,6 @@
+.tip {
+  background: #f6efe3;
+  box-shadow: none;
+}
+.mt-12 { margin-top: 24rpx; }
+.btn-row .btn { font-size: 28rpx; padding: 20rpx; }

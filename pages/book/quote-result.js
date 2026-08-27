@@ -1,6 +1,7 @@
 const { requireLoginPage } = require('../../utils/auth')
 const { getBook, saveBook, setBookStep } = require('../../utils/book')
 const { request, yuan } = require('../../utils/request')
+const { cityLabel } = require('../../utils/regions')
 
 const QUARANTINE = 20000
 
@@ -12,11 +13,12 @@ Page({
     agencyOn: false,
     insureOn: false,
     crates: [],
-    crateNames: [],
+    crateSkuId: '',
     crateLabel: '',
     crateYuan: '0.00',
     declaredYuan: '',
-    totalYuan: '0.00'
+    totalYuan: '0.00',
+    routeLine: ''
   },
   onLoad() {
     requireLoginPage().then(() => request({ url: '/addons/crates' })).then((data) => {
@@ -27,16 +29,25 @@ Page({
         return
       }
       const lines = (q.lines || []).map((l) => ({ ...l, yuan: yuan(l.cents) }))
+      const crates = (data.list || []).map((c) => ({ ...c, yuan: yuan(c.price_cents) }))
+      const picked = crates.find((c) => c.id === b.crateSkuId)
       this.setData({
         quote: { ...q, lines },
         freightYuan: yuan(q.sellFreightCents),
-        crates: data.list || [],
-        crateNames: (data.list || []).map((c) => c.name),
+        crates,
         crateOn: b.crateMode === 'buy',
         agencyOn: b.quarantineMode === 'agency',
         insureOn: Boolean(b.insure),
-        crateLabel: '',
-        declaredYuan: b.declaredValueCents ? String(Number(b.declaredValueCents) / 100) : ''
+        crateSkuId: b.crateSkuId || '',
+        crateLabel: picked ? picked.name : '',
+        crateYuan: picked ? picked.yuan : '0.00',
+        declaredYuan: b.declaredValueCents ? String(Number(b.declaredValueCents) / 100) : '',
+        routeLine: [cityLabel(b.fromCity) || (b.sender && b.sender.city), cityLabel(b.toCity) || (b.receiver && b.receiver.city)]
+          .filter(Boolean)
+          .join(' → ') +
+          (b.breed ? ' · ' + b.breed : '') +
+          (b.weightKg ? ' ' + b.weightKg + 'kg' : '') +
+          (b.pickupDate ? ' · ' + b.pickupDate + '取件' : '')
       })
       setBookStep('quote-result')
       this.recalc()
@@ -49,11 +60,13 @@ Page({
     this.setData({ crateOn })
     this.recalc()
   },
-  onCrate(e) {
-    const c = this.data.crates[e.detail.value]
+  pickCrate(e) {
+    const id = e.currentTarget.dataset.id
+    const c = this.data.crates.find((x) => x.id === id)
+    if (!c) return
     getBook().crateSkuId = c.id
     saveBook()
-    this.setData({ crateLabel: c.name, crateYuan: yuan(c.price_cents) })
+    this.setData({ crateSkuId: c.id, crateLabel: c.name, crateYuan: c.yuan })
     this.recalc()
   },
   toggleAgency() {
@@ -87,7 +100,10 @@ Page({
     }
     if (this.data.agencyOn) extra += QUARANTINE
     if (this.data.insureOn) extra += Math.max(100, Math.round((Number(b.declaredValueCents) || 0) * 0.01))
-    this.setData({ totalYuan: yuan((q.sellFreightCents || 0) + extra) })
+    const totalCents = (q.sellFreightCents || 0) + extra
+    b.previewTotalCents = totalCents
+    saveBook()
+    this.setData({ totalYuan: yuan(totalCents) })
   },
   next() {
     const b = getBook()

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=402, initial-scale=1, user-scalable=no" />
+  <title>编辑宠物</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="../assets/app.css" />
+</head>
+<body data-title="宠物档案" data-back="pets.html">
+  <div id="app" class="pad-b pad">
+    <div class="card" style="text-align:center">
+      <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=240&q=80" alt="" style="width:88px;height:88px;border-radius:28px;object-fit:cover;margin:8px auto 12px" />
+      <div class="link">更换近照</div>
+    </div>
+    <div class="card">
+      <div class="field">
+        <label>宠物名</label>
+        <input value="奶茶" placeholder="必填" />
+      </div>
+      <div class="pick-row" style="padding:14px 0">
+        <div>
+          <div class="faint">种类</div>
+          <div style="font-weight:600;margin-top:2px">猫</div>
+        </div>
+      </div>
+      <div class="seg mt-8">
+        <span class="on">猫</span>
+        <span>狗</span>
+        <span>其他</span>
+      </div>
+      <div class="field">
+        <label>品种</label>
+        <input value="英国短毛猫" />
+      </div>
+      <div class="pick-row">
+        <div>
+          <div class="faint">体重 kg</div>
+          <div class="sub">下单时仍可修改</div>
+        </div>
+        <div class="stepper">
+          <i class="ri-subtract-line minus"></i>
+          <b>4.5</b>
+          <i class="ri-add-line plus"></i>
+        </div>
+      </div>
+      <div class="pick-row">
+        <div class="faint">性别</div>
+        <div class="seg" style="width:160px">
+          <span>公</span>
+          <span class="on">母</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>备注</label>
+        <textarea rows="2">轻微分离焦虑，取件时请轻声</textarea>
+      </div>
+    </div>
+    <div class="footer-bar">
+      <button class="btn" id="savePet">保存档案</button>
+    </div>
+  </div>
+  <script src="../assets/app.js"></script>
+  <script>
+    document.querySelectorAll(".seg").forEach((seg) => {
+      seg.querySelectorAll("span").forEach((s) => {
+        s.addEventListener("click", () => {
+          seg.querySelectorAll("span").forEach((x) => x.classList.remove("on"));
+          s.classList.add("on");
+        });
+      });
+    });
+  </script>
+</body>
+</html>

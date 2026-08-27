@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=402, initial-scale=1, user-scalable=no" />
+  <title>补差支付</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="../assets/app.css" />
+</head>
+<body data-title="复秤补差" data-back="orders.html">
+  <div id="app" class="pad-b pad">
+    <div class="card quote-hero">
+      <div class="chip gold">复秤超出 1kg</div>
+      <div class="h2 mt-12">土豆 · 柯基</div>
+      <div class="sub">深圳南山 → 西安雁塔</div>
+      <div class="mt-12"><span class="yen">¥</span><span class="num">168.00</span></div>
+      <div class="sub">需补差运费，支付后继续履约</div>
+    </div>
+
+    <div class="card">
+      <div class="h2 mb-8">重量对比</div>
+      <div class="info-kv"><span>下单重量</span><b>8.6 kg</b></div>
+      <div class="info-kv"><span>上门复秤</span><b>10.0 kg</b></div>
+      <div class="info-kv"><span>忽略阈值</span><b>1.0 kg 以内不补</b></div>
+      <div class="info-kv"><span>超出</span><b style="color:var(--terra)">1.4 kg</b></div>
+    </div>
+
+    <div class="card">
+      <div class="h2 mb-8">补差明细</div>
+      <div class="line"><span class="muted">承运差价</span><span>¥120.00</span></div>
+      <div class="line"><span class="muted">服务费</span><span>¥48.00</span></div>
+      <div class="line" style="border:none"><span>应付补差</span><span class="price">¥168.00</span></div>
+    </div>
+
+    <div class="footer-bar">
+      <button class="btn" id="paySur">模拟支付补差</button>
+    </div>
+  </div>
+  <script src="../assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=402, initial-scale=1, user-scalable=no" />
+  <title>设置</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="../assets/app.css" />
+</head>
+<body data-title="设置" data-back="me.html">
+  <div id="app" class="pad">
+    <div class="card">
+      <div class="pick-row" data-go="invoice.html">
+        <div class="row gap-12">
+          <i class="ri-bill-line" style="color:var(--forest-2)"></i>
+          <span>电子发票</span>
+        </div>
+        <span class="muted">签收后开具 <i class="ri-arrow-right-s-line"></i></span>
+      </div>
+      <div class="pick-row" data-go="agreement.html">
+        <div class="row gap-12">
+          <i class="ri-file-paper-2-line" style="color:var(--forest-2)"></i>
+          <span>运输服务协议</span>
+        </div>
+        <span class="muted">v1 <i class="ri-arrow-right-s-line"></i></span>
+      </div>
+      <div class="pick-row" data-go="toast:订阅消息可在支付时开启">
+        <div class="row gap-12">
+          <i class="ri-notification-3-line" style="color:var(--forest-2)"></i>
+          <span>通知与订阅</span>
+        </div>
+        <span class="muted">已开启部分</span>
+      </div>
+      <div class="pick-row" style="border:none" data-go="toast:当前为演示环境 v0.1">
+        <div class="row gap-12">
+          <i class="ri-information-line" style="color:var(--forest-2)"></i>
+          <span>关于宠途空运</span>
+        </div>
+        <span class="muted">v0.1</span>
+      </div>
+    </div>
+    <button class="btn btn-ghost mt-16" id="logout">退出登录</button>
+  </div>
+  <script src="../assets/app.js"></script>
+</body>
+</html>

@@ -1,1 +1,1 @@
-input { border-bottom: 1rpx solid #eee; padding: 18rpx 0; }
+.field { padding: 24rpx 0; }

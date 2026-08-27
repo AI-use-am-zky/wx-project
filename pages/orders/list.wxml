@@ -1,6 +1,7 @@
 <view class="safe">
-  <view wx:if="{{needLogin}}" class="card">
-    <view>登录后查看订单</view>
+  <view wx:if="{{needLogin}}" class="card login-card">
+    <view class="h2">登录后查看订单</view>
+    <view class="sub mt-8">下单、取件和补差都会出现在这里。</view>
     <view class="btn" bindtap="doLogin">登录</view>
   </view>
   <block wx:else>
@@ -13,14 +14,22 @@
         bindtap="switchTab"
       >{{item.label}}</view>
     </scroll-view>
-    <view wx:if="{{!list.length}}" class="card muted">该分类暂无订单</view>
-    <view class="card" wx:for="{{list}}" wx:key="id" bindtap="open" data-id="{{item.id}}">
-      <view class="row">
-        <text>{{item.breed}} · {{item.weightKg}}kg</text>
-        <text class="tag">{{item.statusText}}</text>
+    <view wx:if="{{!list.length}}" class="empty card">该分类暂无订单</view>
+    <view class="card order" wx:for="{{list}}" wx:key="id" bindtap="open" data-id="{{item.id}}">
+      <view class="avatar ph" wx:if="{{!item.cover}}">宠</view>
+      <image wx:else class="avatar" src="{{item.cover}}" mode="aspectFill" />
+      <view class="meta">
+        <view class="top">
+          <view class="pet">{{item.title}}</view>
+          <view class="st {{item.statusClass}}">{{item.statusText}}</view>
+        </view>
+        <view class="path">{{item.path}}</view>
+        <view class="bot">
+          <text class="faint">{{item.subline}}</text>
+          <text class="price">¥{{item.paidYuan}}</text>
+        </view>
       </view>
-      <view class="muted">{{item.sender.city}} → {{item.receiver.city}}</view>
-      <view class="price">¥{{item.paidYuan}}</view>
     </view>
   </block>
 </view>
+

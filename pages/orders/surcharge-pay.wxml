@@ -1,7 +1,20 @@
-<view class="safe">
-  <view class="card">
-    <view>复秤超出 1kg，需补差</view>
-    <view class="price">¥{{yuan}}</view>
-    <view class="btn" bindtap="pay">模拟支付补差</view>
+<view class="safe-b">
+  <view class="card quote-hero">
+    <text class="chip chip-gold">复秤超出 1kg</text>
+    <view class="h2 mt-12">需补差运费</view>
+    <view class="sub">支付后继续履约</view>
+    <view class="mt-12">
+      <text class="yen">¥</text><text class="num">{{yuan}}</text>
+    </view>
+  </view>
+  <view class="card" wx:if="{{declaredWeightKg}}">
+    <view class="h2 mb-8">重量对比</view>
+    <view class="info-kv"><text class="k">下单重量</text><text class="v">{{declaredWeightKg}} kg</text></view>
+    <view class="info-kv" wx:if="{{actualWeightKg}}"><text class="k">上门复秤</text><text class="v">{{actualWeightKg}} kg</text></view>
+    <view class="info-kv"><text class="k">忽略阈值</text><text class="v">1.0 kg 以内不补</text></view>
   </view>
 </view>
+<view class="footer-bar">
+  <view class="btn" bindtap="pay">模拟支付补差</view>
+</view>
+

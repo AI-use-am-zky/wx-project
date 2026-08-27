@@ -1,23 +1,67 @@
-<view class="safe">
+<view class="safe-b">
   <view class="card">
-    <view class="muted">种类</view>
+    <view class="steps">
+      <view class="step on"><view class="n">1</view>城市</view>
+      <view class="step on"><view class="n">2</view>地址</view>
+      <view class="step on"><view class="n">3</view>估价</view>
+      <view class="step"><view class="n">4</view>资料</view>
+      <view class="step"><view class="n">5</view>支付</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="row-plain mb-8">
+      <view class="h2">宠物信息</view>
+      <navigator class="link" url="/pages/me/pets">从档案选择</navigator>
+    </view>
     <picker range="{{speciesNames}}" bindchange="onSpecies">
-      <view class="row"><text>{{speciesName || '请选择'}}</text><text class="muted">选择</text></view>
+      <view class="pick-row">
+        <view>
+          <view class="faint">种类</view>
+          <view class="pick-val">{{speciesName || '请选择'}}</view>
+        </view>
+        <text class="muted">选择 ›</text>
+      </view>
     </picker>
-    <view class="muted">品种</view>
     <picker range="{{breedNames}}" bindchange="onBreed">
-      <view class="row"><text>{{breed || '请选择'}}</text><text class="muted">选择</text></view>
+      <view class="pick-row">
+        <view>
+          <view class="faint">品种</view>
+          <view class="pick-val">{{breed || '请选择'}}</view>
+        </view>
+        <text class="muted">选择 ›</text>
+      </view>
     </picker>
-    <view class="muted">宠物姓名（选填）</view>
-    <input placeholder="例如 奶茶" value="{{petName}}" bindinput="onPetName" />
-    <view class="muted" style="margin-top:16rpx">宠物注意事项（选填）</view>
-    <textarea class="area" placeholder="例如 易应激、需温热食物、分离焦虑等" value="{{petNote}}" bindinput="onPetNote" auto-height />
-    <view class="muted" style="margin-top:16rpx">体重（kg）</view>
-    <input type="digit" placeholder="例如 4.5" value="{{weightKg}}" bindinput="onWeight" />
-    <view class="muted" style="margin-top:16rpx">上门取件日（航班由承运方排）</view>
+    <view class="field">
+      <view class="field-label">宠物姓名（选填）</view>
+      <input placeholder="例如 奶茶" value="{{petName}}" bindinput="onPetName" />
+    </view>
+    <view class="field">
+      <view class="field-label">注意事项（选填）</view>
+      <textarea class="area" placeholder="例如 易应激、需温热食物、分离焦虑等" value="{{petNote}}" bindinput="onPetNote" auto-height />
+    </view>
+    <view class="field">
+      <view class="field-label">体重（kg）</view>
+      <view class="sub" style="margin-bottom:8rpx">按实际称重，复秤差 1kg 内不补差</view>
+      <input type="digit" placeholder="例如 4.5" value="{{weightKg}}" bindinput="onWeight" />
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="h2 mb-8">上门取件日</view>
+    <view class="sub">航班与具体时段由承运方按可约时间安排，下单后在订单里查看。</view>
     <picker mode="date" start="{{minDate}}" bindchange="onDate">
-      <view class="row"><text>{{pickupDate || '请选择日期'}}</text><text class="muted">日历</text></view>
+      <view class="pick-row">
+        <view>
+          <view class="faint">期望取件日</view>
+          <view class="pick-val">{{pickupDate || '请选择日期'}}</view>
+        </view>
+        <text class="muted">日历 ›</text>
+      </view>
     </picker>
   </view>
-  <view class="btn" bindtap="quote">估价</view>
 </view>
+<view class="footer-bar">
+  <view class="btn" bindtap="quote">立即估价</view>
+</view>
+

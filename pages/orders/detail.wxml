@@ -1,20 +1,63 @@
-<view class="safe">
-  <view class="card">
-    <view class="h1">{{order.statusText}}</view>
-    <view class="muted" wx:if="{{order.sfWaybillNo}}" bindtap="copy">运单 {{order.sfWaybillNo}}（点按复制）</view>
-    <view class="price">¥{{order.paidYuan}}</view>
-  </view>
-  <view class="card">
-    <view>时间轴</view>
-    <view class="tl" wx:for="{{order.timeline}}" wx:key="at">
-      <view class="muted">{{item.at}}</view>
-      <view>{{item.text}}</view>
+<view class="safe-b">
+  <view class="card hero-status">
+    <view class="row-plain">
+      <text class="chip chip-white">{{order.statusText}}</text>
+      <text class="hero-paid" wx:if="{{order.paidYuan}}">已支付 ¥{{order.paidYuan}}</text>
+    </view>
+    <view class="h1 hero-title">{{headline}}</view>
+    <view class="hero-desc">{{heroDesc}}</view>
+    <view class="waybill" wx:if="{{order.sfWaybillNo}}" bindtap="copy">
+      <view>
+        <view class="faint" style="color:rgba(255,255,255,.7)">顺丰运单</view>
+        <view class="waybill-no">{{order.sfWaybillNo}}</view>
+      </view>
+      <text>复制</text>
     </view>
   </view>
-  <view class="btn" wx:if="{{canCancel}}" bindtap="cancel">申请取消</view>
-  <view class="btn" wx:if="{{order.status==='surcharge_pending'}}" bindtap="surcharge">去补差</view>
+
   <view class="card">
-    <button open-type="contact">在线客服</button>
-    <view class="btn-ghost btn" bindtap="call">打电话 {{phone}}</view>
+    <view class="h2">进度时间轴</view>
+    <view class="tl">
+      <view class="tl-item {{index===0?'on':''}}" wx:for="{{order.timeline}}" wx:key="at">
+        <view class="t">{{item.text}}</view>
+        <view class="d">{{item.at}}</view>
+      </view>
+    </view>
   </view>
+
+  <view class="card" wx:if="{{order.sender}}">
+    <view class="h2 mb-8">寄收信息</view>
+    <view class="ship">
+      <view class="ship-col">
+        <view class="faint">寄</view>
+        <view class="h2" style="font-size:30rpx">{{order.sender.name}} {{order.sender.phone}}</view>
+        <view class="sub">{{order.sender.city}}{{order.sender.district}}{{order.sender.detail}}</view>
+      </view>
+      <view class="ship-arrow">→</view>
+      <view class="ship-col right">
+        <view class="faint">收</view>
+        <view class="h2" style="font-size:30rpx">{{order.receiver.name}} {{order.receiver.phone}}</view>
+        <view class="sub">{{order.receiver.city}}{{order.receiver.district}}{{order.receiver.detail}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{order.breed || order.petName}}">
+    <view class="row-plain mb-8">
+      <view class="h2">宠物</view>
+      <text class="chip">{{order.breed}}{{order.weightKg ? ' · ' + order.weightKg + 'kg' : ''}}</text>
+    </view>
+    <view class="pet-row">
+      <image wx:if="{{cover}}" class="avatar" src="{{cover}}" mode="aspectFill" />
+      <view wx:else class="avatar ph">宠</view>
+      <view>
+        <view class="h2" style="font-size:30rpx">{{order.petName || '未填宠物名'}}</view>
+        <view class="sub" wx:if="{{order.petNote}}">{{order.petNote}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="btn" wx:if="{{order.status==='surcharge_pending'}}" bindtap="surcharge">去补差</view>
+  <view class="btn btn-danger" wx:if="{{canCancel}}" bindtap="cancel">申请取消</view>
 </view>
+

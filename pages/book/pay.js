@@ -1,16 +1,59 @@
 const { requireLoginPage } = require('../../utils/auth')
 const { getBook, resetBook, setBookStep } = require('../../utils/book')
-const { request } = require('../../utils/request')
+const { request, yuan } = require('../../utils/request')
+const { cityLabel } = require('../../utils/regions')
+
+function maskPhone(p) {
+  const s = String(p || '')
+  if (s.length < 7) return s
+  return s.slice(0, 3) + '****' + s.slice(-4)
+}
+
+function addrLine(a) {
+  if (!a) return ''
+  return [a.city, a.district, a.detail].filter(Boolean).join(' ')
+}
 
 Page({
-  data: { agreed: false, needPhone: false, agreementVersion: 'v1' },
+  data: {
+    agreed: false,
+    needPhone: false,
+    agreementVersion: 'v1',
+    summary: {
+      pet: '',
+      sender: '',
+      senderAddr: '',
+      receiver: '',
+      pickupDate: '',
+      crate: '',
+      quarantine: '',
+      insure: '',
+      totalYuan: '0.00'
+    }
+  },
   onLoad() {
     requireLoginPage().then(() => {
       const user = wx.getStorageSync('user') || {}
       const settings = getApp().globalData.settings || {}
+      const b = getBook()
+      const s = b.sender || {}
+      const r = b.receiver || {}
       this.setData({
         needPhone: !user.phone,
-        agreementVersion: settings.agreementVersion || 'v1'
+        agreementVersion: settings.agreementVersion || 'v1',
+        summary: {
+          pet: [b.petName, b.breed, b.weightKg ? b.weightKg + 'kg' : '', cityLabel(b.fromCity) && cityLabel(b.toCity) ? cityLabel(b.fromCity) + ' → ' + cityLabel(b.toCity) : '']
+            .filter(Boolean)
+            .join(' · '),
+          sender: [s.name, maskPhone(s.phone)].filter(Boolean).join(' '),
+          senderAddr: addrLine(s),
+          receiver: [r.name, maskPhone(r.phone)].filter(Boolean).join(' '),
+          pickupDate: b.pickupDate || '',
+          crate: b.crateMode === 'buy' ? '购买航空箱' : '自备',
+          quarantine: b.quarantineMode === 'agency' ? '代办检疫' : '自备证明',
+          insure: b.insure ? '已保价' : '不保价',
+          totalYuan: yuan(b.previewTotalCents || (b.quote && b.quote.sellFreightCents) || 0)
+        }
       })
       setBookStep('pay')
     })

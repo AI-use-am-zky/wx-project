@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=402, initial-scale=1, user-scalable=no" />
+  <title>宠物与估价</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="../assets/app.css" />
+</head>
+<body data-title="宠物与取件日" data-back="addresses.html">
+  <div id="app" class="pad-b pad">
+    <div class="card" style="margin-bottom:12px">
+      <div class="steps">
+        <div class="step on"><div class="n">1</div>城市</div>
+        <div class="step on"><div class="n">2</div>地址</div>
+        <div class="step on"><div class="n">3</div>估价</div>
+        <div class="step"><div class="n">4</div>资料</div>
+        <div class="step"><div class="n">5</div>支付</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row mb-8">
+        <div class="h2">宠物信息</div>
+        <span class="link" data-go="pets.html">从档案选择</span>
+      </div>
+      <div class="pick-row" data-go="sheet:species">
+        <div>
+          <div class="faint">种类</div>
+          <div id="speciesVal" style="font-weight:600;margin-top:2px">猫</div>
+        </div>
+        <span class="muted">选择 <i class="ri-arrow-right-s-line"></i></span>
+      </div>
+      <div class="pick-row" data-go="sheet:breed">
+        <div>
+          <div class="faint">品种</div>
+          <div id="breedVal" style="font-weight:600;margin-top:2px">英国短毛猫</div>
+        </div>
+        <span class="muted">选择 <i class="ri-arrow-right-s-line"></i></span>
+      </div>
+      <div class="field">
+        <label>宠物姓名（选填）</label>
+        <input value="奶茶" placeholder="例如 奶茶" />
+      </div>
+      <div class="field">
+        <label>注意事项（选填）</label>
+        <textarea rows="2" placeholder="例如 易应激、需温热食物">轻微分离焦虑，取件时请轻声</textarea>
+      </div>
+      <div class="pick-row" style="border:none;padding-bottom:0">
+        <div>
+          <div class="faint">体重</div>
+          <div class="sub">按实际称重，复秤差 1kg 内不补差</div>
+        </div>
+        <div class="stepper">
+          <i class="ri-subtract-line minus"></i>
+          <b>4.5</b>
+          <i class="ri-add-line plus"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="h2 mb-8">上门取件日</div>
+      <p class="sub">航班与具体时段由承运方按可约时间安排，下单后在订单里查看。</p>
+      <div class="pick-row" data-go="sheet:date" style="border:none">
+        <div>
+          <div class="faint">期望取件日</div>
+          <div id="dateVal" style="font-weight:600;margin-top:2px">08月29日 周五</div>
+        </div>
+        <span class="muted"><i class="ri-calendar-line"></i> 日历</span>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <button class="btn" id="doQuote"><i class="ri-calculator-line"></i> 立即估价</button>
+    </div>
+  </div>
+  <script src="../assets/app.js"></script>
+</body>
+</html>

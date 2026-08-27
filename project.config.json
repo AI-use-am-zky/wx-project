@@ -3,10 +3,62 @@
   "libVersion": "trial",
   "packOptions": {
     "ignore": [
-      { "type": "folder", "value": "server" },
-      { "type": "folder", "value": "admin" },
-      { "type": "folder", "value": "docs" },
-      { "type": "folder", "value": "node_modules" }
+      {
+        "value": "server",
+        "type": "folder"
+      },
+      {
+        "value": "admin",
+        "type": "folder"
+      },
+      {
+        "value": "docs",
+        "type": "folder"
+      },
+      {
+        "value": "node_modules",
+        "type": "folder"
+      },
+      {
+        "value": "2-design/pages",
+        "type": "folder"
+      },
+      {
+        "value": "2-design/index.html",
+        "type": "file"
+      },
+      {
+        "value": "2-design/assets/app.css",
+        "type": "file"
+      },
+      {
+        "value": "2-design/assets/app.js",
+        "type": "file"
+      },
+      {
+        "value": "2-design/assets/tab",
+        "type": "folder"
+      },
+      {
+        "value": "2-design/assets/HomepageBanner",
+        "type": "folder"
+      },
+      {
+        "value": "2-design/assets/banner/1.png",
+        "type": "file"
+      },
+      {
+        "value": "2-design/assets/banner/z-image_00021(1).png",
+        "type": "file"
+      },
+      {
+        "value": "2-design/assets/banner/1.png",
+        "type": "file"
+      },
+      {
+        "value": "2-design/assets/banner/z-image_00021(1).png",
+        "type": "file"
+      }
     ],
     "include": []
   },

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=402, initial-scale=1, user-scalable=no" />
+  <title>选择城市</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="../assets/app.css" />
+</head>
+<body data-title="选择城市" data-back="home.html">
+  <div id="app" class="pad-b pad">
+    <div class="card" style="margin-bottom:12px">
+      <div class="steps">
+        <div class="step on"><div class="n">1</div>城市</div>
+        <div class="step"><div class="n">2</div>地址</div>
+        <div class="step"><div class="n">3</div>估价</div>
+        <div class="step"><div class="n">4</div>资料</div>
+        <div class="step"><div class="n">5</div>支付</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="faint">出发城市</div>
+          <div class="h2 mt-8">选择寄出地</div>
+        </div>
+        <span class="chip">跟承运方可运城市</span>
+      </div>
+      <div class="city-grid">
+        <div class="city on">杭州</div>
+        <div class="city">北京</div>
+        <div class="city">上海</div>
+        <div class="city">广州</div>
+        <div class="city">深圳</div>
+        <div class="city">成都</div>
+        <div class="city">武汉</div>
+        <div class="city">西安</div>
+        <div class="city">南京</div>
+        <div class="city">重庆</div>
+        <div class="city">长沙</div>
+        <div class="city">厦门</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="faint">到达城市</div>
+      <div class="h2 mt-8">选择目的地</div>
+      <div class="city-grid">
+        <div class="city">杭州</div>
+        <div class="city">北京</div>
+        <div class="city">上海</div>
+        <div class="city">广州</div>
+        <div class="city">深圳</div>
+        <div class="city on">成都</div>
+        <div class="city">武汉</div>
+        <div class="city">西安</div>
+        <div class="city">南京</div>
+        <div class="city">重庆</div>
+        <div class="city">长沙</div>
+        <div class="city">厦门</div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <button class="btn" data-go="addresses.html">下一步：填写地址</button>
+    </div>
+  </div>
+  <script src="../assets/app.js"></script>
+</body>
+</html>

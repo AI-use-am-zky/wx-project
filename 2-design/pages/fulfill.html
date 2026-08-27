@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=402, initial-scale=1, user-scalable=no" />
+  <title>补齐资料</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="../assets/app.css" />
+</head>
+<body data-title="补齐资料" data-back="quote-result.html">
+  <div id="app" class="pad-b pad">
+    <div class="card" style="margin-bottom:12px">
+      <div class="steps">
+        <div class="step on"><div class="n">1</div>城市</div>
+        <div class="step on"><div class="n">2</div>地址</div>
+        <div class="step on"><div class="n">3</div>估价</div>
+        <div class="step on"><div class="n">4</div>资料</div>
+        <div class="step"><div class="n">5</div>支付</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div class="h2">宠物近照</div>
+        <span class="chip">至少 1 张</span>
+      </div>
+      <p class="sub mt-8">清晰正面或全身，便于承运核验。</p>
+      <div class="photos">
+        <img class="ph" src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=300&q=80" alt="" />
+        <div class="add-ph" data-kind="pet"><i class="ri-camera-line"></i>添加</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div class="h2">自备航空箱</div>
+        <span class="chip gold">当前：自备</span>
+      </div>
+      <p class="sub mt-8">请拍摄箱体侧面，需能看清尺寸与通风口。</p>
+      <div class="photos">
+        <div class="add-ph" data-kind="crate"><i class="ri-add-line"></i>上传箱照</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div class="h2">检疫证明</div>
+        <span class="chip">自备上传</span>
+      </div>
+      <p class="sub mt-8">动物检疫合格证明，有效期内。</p>
+      <div class="photos">
+        <img class="ph" src="https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=300&q=80" alt="" />
+        <div class="add-ph" data-kind="doc"><i class="ri-add-line"></i>添加</div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <button class="btn" data-go="pay.html">资料齐全，去支付</button>
+    </div>
+  </div>
+  <script src="../assets/app.js"></script>
+</body>
+</html>

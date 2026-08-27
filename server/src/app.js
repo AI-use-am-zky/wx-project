@@ -129,8 +129,6 @@ export function createApp() {
 
   app.get('/meta/settings', (_req, res) => {
     ok(res, {
-      customerServicePhone: getSetting('customer_service_phone'),
-      customerServiceHours: getSetting('customer_service_hours'),
       agreementVersion: getSetting('transport_agreement_version'),
       brandName: '宠途空运'
     })

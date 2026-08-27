@@ -1,6 +1,22 @@
-<view class="safe">
+<view class="safe-b">
+  <view class="card">
+    <view class="steps">
+      <view class="step on"><view class="n">1</view>城市</view>
+      <view class="step"><view class="n">2</view>地址</view>
+      <view class="step"><view class="n">3</view>估价</view>
+      <view class="step"><view class="n">4</view>资料</view>
+      <view class="step"><view class="n">5</view>支付</view>
+    </view>
+  </view>
+
   <view class="card" wx:if="{{!role || role==='from'}}">
-    <view class="muted">{{role==='from' ? '选择出发城市' : '出发'}}</view>
+    <view class="row-plain">
+      <view>
+        <view class="faint">出发城市</view>
+        <view class="h2 mt-8">{{role==='from' ? '选择寄出地' : '选择寄出地'}}</view>
+      </view>
+      <text class="chip">跟承运方可运城市</text>
+    </view>
     <view class="city-grid">
       <view
         wx:for="{{cities}}"
@@ -12,8 +28,10 @@
       >{{item.name}}</view>
     </view>
   </view>
+
   <view class="card" wx:if="{{!role || role==='to'}}">
-    <view class="muted">{{role==='to' ? '选择到达城市' : '到达'}}</view>
+    <view class="faint">到达城市</view>
+    <view class="h2 mt-8">选择目的地</view>
     <view class="city-grid">
       <view
         wx:for="{{cities}}"
@@ -25,5 +43,8 @@
       >{{item.name}}</view>
     </view>
   </view>
-  <view class="btn" wx:if="{{!role}}" bindtap="next">下一步：填写地址</view>
 </view>
+<view class="footer-bar" wx:if="{{!role}}">
+  <view class="btn" bindtap="next">下一步：填写地址</view>
+</view>
+

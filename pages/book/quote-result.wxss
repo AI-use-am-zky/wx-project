@@ -1,0 +1,41 @@
+.addon {
+  display: flex;
+  align-items: flex-start;
+  gap: 24rpx;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f0ece6;
+}
+.addon:last-child { border-bottom: none; }
+.txt { flex: 1; min-width: 0; }
+.addon-side { text-align: right; }
+.addon-side .faint { margin-bottom: 12rpx; }
+.crate-opt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+.crate-chip {
+  padding: 12rpx 20rpx;
+  border-radius: 16rpx;
+  background: #f2f7f4;
+  font-size: 24rpx;
+}
+.crate-chip.on { background: #1e4d3e; color: #fff; }
+.paybar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 -8rpx 32rpx rgba(21, 36, 30, 0.06);
+}
+.pay-btn {
+  margin: 0;
+  min-width: 240rpx;
+  padding: 20rpx 40rpx;
+}
