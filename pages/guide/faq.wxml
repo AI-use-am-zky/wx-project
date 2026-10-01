@@ -1,0 +1,135 @@
+<view class="guide-page">
+  <view class="guide-hero">
+    <view class="tag">宠物专运 · 常见问题</view>
+    <view class="title">常见问题</view>
+    <view class="desc">更多注意事项，出行前看一看</view>
+  </view>
+
+  <view class="guide-body">
+    <view class="intro-card">欢迎使用 宠物专运！每一次启程都承载着您的托付。为了让爱宠的旅途更舒适安全，我们整理了以下常见问题，点击即可展开查看。</view>
+
+    <view class="sec">
+      <view class="sec-head">
+        <view class="sec-no">01</view>
+        <view class="sec-title">准备与检疫</view>
+      </view>
+      <view class="sec-card">
+        <view class="qa">
+          <view class="qa-q"><view class="qa-badge">Q</view>出行前要打疫苗吗？打完能马上走吗？</view>
+          <view class="qa-a">不能马上走，必须在打完后再接取宠物。并对宠物进行适当的观察期后接送。建议打完疫苗观察至少15天，确认无不良反应后才可出行。</view>
+        </view>
+        <view class="qa">
+          <view class="qa-q"><view class="qa-badge">Q</view>检疫合格证明去哪开？有效期多久？</view>
+          <view class="qa-a">带上宠物和防疫本，到当地的动物卫生监督所办理。有效期通常为3-5天，具体以所在地的规定为准。</view>
+          <view class="tip tip-ok" style="margin-left:48rpx">提示：代办检疫合格证明服务费用请线上付，详情咨询客服。</view>
+        </view>
+        <view class="qa">
+          <view class="qa-q"><view class="qa-badge">Q</view>长途出行要给爱宠备哪些旅行物品？</view>
+          <view class="qa-a">
+            <view class="line">建议携带备用粮。</view>
+            <view class="line">适量饮水：适合宠物适宜饮水温度，为运输过程提供。</view>
+            <view class="line">安抚物品：如主人衣物或玩具等（带气味），可在新环境下让它放松情绪。</view>
+          </view>
+        </view>
+        <view class="qa">
+          <view class="qa-q"><view class="qa-badge">Q</view>途中怎么吃喝？会晕机吗？</view>
+          <view class="qa-a">为尽量减少宠物压力，建议前4-8小时限量饮食。喝水用挂式饮水器或托盘挂在门上。</view>
+          <view class="tip tip-ok" style="margin-left:48rpx">小贴士：建议随车配备饮用水，但不添加饮水盘，以免让宠物接触细菌。</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="sec">
+      <view class="sec-head">
+        <view class="sec-no">02</view>
+        <view class="sec-title">舱位与包装</view>
+      </view>
+      <view class="sec-card">
+        <view class="qa">
+          <view class="qa-q"><view class="qa-badge">Q</view>对航空箱有什么具体要求？</view>
+          <view class="qa-a">
+            <view class="line">必须是专用航空箱，且配置符合标准：</view>
+            <view class="line">空间：能让宠物自由站立、转身、舒适卧躺。</view>
+            <view class="line">透气良好：至少三面通风，门要有锁扣且坚固，能承受行李上下叠压。</view>
+            <view class="line">清洁：自带吸水垫铺底防止渗透，防止泄漏。</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="sec">
+      <view class="sec-head">
+        <view class="sec-no">03</view>
+        <view class="sec-title">履约与时效</view>
+      </view>
+      <view class="sec-card">
+        <view class="qa">
+          <view class="qa-q"><view class="qa-badge">Q</view>爱宠出行用什么交通工具？</view>
+          <view class="qa-a">空运由指定飞机的专属货舱（22-26℃恒温，供氧防护）；陆运段由专业运宠监控专车，全程视频监控并在到达站配备短驳转运。</view>
+        </view>
+        <view class="qa">
+          <view class="qa-q"><view class="qa-badge">Q</view>该“自己送”受理需要多久时间？</view>
+          <view class="qa-a">宠物到站前按相关程序办理，前后时间总共约3-4小时完成到站流程办理。如需上门接送提前与客服确认上门时间。</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="sec">
+      <view class="sec-head">
+        <view class="sec-no">04</view>
+        <view class="sec-title">计费与保障</view>
+      </view>
+      <view class="sec-card">
+        <view class="qa">
+          <view class="qa-q"><view class="qa-badge">Q</view>费用怎么算？</view>
+          <view class="qa-a">
+            <view class="line">价格计算，含基础费用：</view>
+            <view class="line">运输运费：按件重量（净重+箱）计算价格。</view>
+            <view class="line">增值服务：如门到门专业运送等费用。</view>
+            <view class="line">保险服务：如发生意外损失，赔付等。</view>
+          </view>
+        </view>
+        <view class="qa">
+          <view class="qa-q"><view class="qa-badge">Q</view>途中有保险吗？出意外怎么办？</view>
+          <view class="qa-a">我们为您提供完善的保险服务，理赔额度将根据保单金额理赔。一旦出意外，您保存相关资料联系我们快速理赔。</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="sec">
+      <view class="sec-head">
+        <view class="sec-no">05</view>
+        <view class="sec-title">陪伴与可视</view>
+      </view>
+      <view class="sec-card">
+        <view class="qa">
+          <view class="qa-q"><view class="qa-badge">Q</view>不能登机，能知晓它一路状态吗？</view>
+          <view class="qa-a">飞行过程中无法查询进度，负责人员动态及时通知，下机后第一时间告知您。在陆运、空运入舱，可能会有停顿或由于信号弱/视频不可见，并非全程可视。</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="sec">
+      <view class="sec-head">
+        <view class="sec-no">06</view>
+        <view class="sec-title">医疗与风控</view>
+      </view>
+      <view class="sec-card">
+        <view class="qa">
+          <view class="qa-q"><view class="qa-badge">Q</view>途中突发不适怎么处理？</view>
+          <view class="qa-a">如遇紧急，全国网点网络将联动就近的合作宠物医院，途中发现异常会及时中止运输，第一时间联系您并协助就近送医。</view>
+        </view>
+        <view class="qa">
+          <view class="qa-q"><view class="qa-badge">Q</view>哪些情况不适宜出行？</view>
+          <view class="qa-a">根据相关宠物运输服务风控管理要求，以下宠物不在承运范围内：</view>
+          <view class="risk-box" style="margin-left:48rpx">
+            <view class="h">不适宜出行的情况</view>
+            <view class="p">高危疾病：怀孕、哺乳、发情期、患有潜伏疾病、先天心脑血管疾病。</view>
+            <view class="p">特殊品种：短鼻犬猫（法斗、巴哥、加菲等），极度敏感，气压变化强烈易梗阻。</view>
+            <view class="p">不可抗力：极端天气可能导致停运或航班长期延误。</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

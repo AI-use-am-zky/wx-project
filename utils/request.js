@@ -42,9 +42,6 @@ function request({ url, method = 'GET', data, needAuth = true }) {
 }
 
 function uploadFile(filePath) {
-  if (isDevTools()) {
-    return Promise.resolve({ fileId: 'dev-' + Date.now(), url: filePath || '' })
-  }
   return new Promise((resolve, reject) => {
     let settled = false
     const done = (fn, arg) => {
@@ -65,11 +62,14 @@ function uploadFile(filePath) {
           if (body.code !== 0) done(reject, body)
           else done(resolve, body.data)
         } catch (e) {
-          done(reject, { message: '上传解析失败' })
+          // 开发者工具偶发失败时，先回传本地临时路径便于展示
+          if (isDevTools()) done(resolve, { fileId: 'local', url: filePath || '' })
+          else done(reject, { message: '上传解析失败' })
         }
       },
       fail(err) {
-        done(reject, { message: (err && err.errMsg) || '上传失败' })
+        if (isDevTools()) done(resolve, { fileId: 'local', url: filePath || '' })
+        else done(reject, { message: (err && err.errMsg) || '上传失败' })
       }
     })
   })

@@ -7,9 +7,22 @@ import { fileURLToPath } from 'url'
 import multer from 'multer'
 import { v4 as uuid } from 'uuid'
 import { config } from './config.js'
-import { db, nowIso, uuid as dbUuid, getSetting, settingsMap } from './db.js'
+import {
+  db,
+  nowIso,
+  uuid as dbUuid,
+  getSetting,
+  settingsMap,
+  getUserDb,
+  ensureUserDb,
+  syncUserProfile,
+  listOrderIndex,
+  dbForResource,
+  ownerOf
+} from './db.js'
 import { ok, fail, validAddress, BREEDS } from './http.js'
 import { createMockSf } from './adapters/sf-mock.js'
+import { createSf, createSfOpenClient } from './adapters/sf-open.js'
 import { createWechat } from './adapters/wechat.js'
 import { createNotify } from './adapters/notify.js'
 import { createInvoiceAdapter } from './adapters/invoice.js'
@@ -32,7 +45,8 @@ import {
   getBadges,
   markBadgeSeen,
   logOperation,
-  listOperations
+  listOperations,
+  listUserDbFiles
 } from './session-db.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -45,7 +59,16 @@ const storage = multer.diskStorage({
 })
 const upload = multer({ storage, limits: { fileSize: 8 * 1024 * 1024 } })
 
-const sf = createMockSf({ quoteFail: config.sfQuoteFail })
+const sf = createSf({
+  mock: config.sfMock,
+  quoteFail: config.sfQuoteFail,
+  partnerId: config.sfPartnerId,
+  checkWord: config.sfCheckWord,
+  env: config.sfEnv,
+  monthlyCard: config.sfMonthlyCard,
+  preferredProductCodes: config.sfPreferredProductCodes,
+  mockFactory: { createMockSf }
+})
 const wechat = createWechat()
 const notify = createNotify({ webhookUrl: config.adminNotifyWebhook })
 const invoiceAdapter = createInvoiceAdapter()
@@ -78,9 +101,21 @@ function optionalUser(req) {
   return db.prepare('SELECT * FROM users WHERE id = ?').get(row.user_id)
 }
 
+function publicUser(user) {
+  if (!user) return null
+  return {
+    id: user.id,
+    phone: user.phone || '',
+    nickName: user.nick_name || '',
+    avatarUrl: user.avatar_url || ''
+  }
+}
+
 export function createApp() {
   const app = express()
   app.use(cors())
+  // 支付回调必须先读原始 XML，不能走 json parser
+  app.use('/pay/wx-notify', express.raw({ type: () => true, limit: '1mb' }))
   app.use(express.json({ limit: '8mb' }))
   app.use('/uploads', express.static(uploadDir))
   const adminDir = path.join(__dirname, '../../admin')
@@ -92,29 +127,90 @@ export function createApp() {
     try {
       const { code } = req.body || {}
       if (!code) return fail(res, 400, '缺少 code')
+      // 官方：code → openid + session_key（session_key 只留服务端）
       const sess = await wechat.code2session(code)
       let user = db.prepare('SELECT * FROM users WHERE openid = ?').get(sess.openid)
       if (!user) {
         const id = dbUuid()
-        db.prepare('INSERT INTO users (id, openid, phone, created_at) VALUES (?, ?, ?, ?)').run(id, sess.openid, null, nowIso())
+        db.prepare(
+          'INSERT INTO users (id, openid, phone, session_key, unionid, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+        ).run(id, sess.openid, null, sess.session_key || null, sess.unionid || null, nowIso())
         user = db.prepare('SELECT * FROM users WHERE id = ?').get(id)
+      } else {
+        db.prepare('UPDATE users SET session_key = ?, unionid = COALESCE(?, unionid) WHERE id = ?').run(
+          sess.session_key || null,
+          sess.unionid || null,
+          user.id
+        )
+        user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id)
       }
       const token = uuid()
       db.prepare('INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)').run(token, user.id, nowIso())
+      // 每位用户独立业务库：data/users/{userId}.sqlite
+      const userDb = ensureUserDb(user.id)
       ensureDemoOrders(user.id)
-      logOperation({ userId: user.id, type: 'login', payload: { mock: true } })
-      ok(res, { token, user: { id: user.id, phone: user.phone }, needPhone: !user.phone })
+      logOperation({
+        userId: user.id,
+        type: 'login',
+        payload: { mock: config.wxMockLogin || !config.wxAppSecret, dbPath: userDb.path }
+      })
+      // 自定义登录态：只返回 token + 业务用户信息，不下发 session_key
+      ok(res, {
+        token,
+        user: publicUser(user),
+        needPhone: !user.phone,
+        needProfile: !(user.nick_name && user.avatar_url),
+        dbPath: userDb.path
+      })
     } catch (e) {
-      fail(res, 500, e.message)
+      console.error('[wx-login]', e.message, e.data || '')
+      fail(res, 500, e.message || '微信登录失败', e.data || null)
     }
   })
 
+  app.get('/auth/me', auth, (req, res) => {
+    ensureUserDb(req.user.id)
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id)
+    ok(res, {
+      user: publicUser(user),
+      needPhone: !(user && user.phone),
+      needProfile: !(user && user.nick_name && user.avatar_url),
+      dbPath: user && user.db_path
+    })
+  })
+
+  /** 头像昵称填写（官方 chooseAvatar + nickname，非 getUserInfo） */
+  app.post('/auth/profile', auth, (req, res) => {
+    const { nickName, avatarUrl } = req.body || {}
+    const name = nickName != null ? String(nickName).trim().slice(0, 32) : null
+    const avatar = avatarUrl != null ? String(avatarUrl).trim().slice(0, 512) : null
+    if (name === null && avatar === null) return fail(res, 400, '无更新内容')
+    if (name !== null) {
+      db.prepare('UPDATE users SET nick_name = ? WHERE id = ?').run(name || null, req.user.id)
+    }
+    if (avatar !== null) {
+      db.prepare('UPDATE users SET avatar_url = ? WHERE id = ?').run(avatar || null, req.user.id)
+    }
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id)
+    syncUserProfile(user)
+    ok(res, { user: publicUser(user) })
+  })
+
   app.post('/auth/wx-phone', auth, async (req, res) => {
-    const { code } = req.body || {}
-    const phone = code ? (await wechat.decryptPhone(code)).phone : req.body.phone
-    if (!phone) return fail(res, 400, '无法获取手机号')
-    db.prepare('UPDATE users SET phone = ? WHERE id = ?').run(phone, req.user.id)
-    ok(res, { phone })
+    try {
+      const { code, phone } = req.body || {}
+      if (!config.wxMockLogin && phone && !code) {
+        return fail(res, 400, '请使用微信手机号授权')
+      }
+      const result = await wechat.decryptPhone(code, phone)
+      if (!result.phone) return fail(res, 400, '无法获取手机号')
+      db.prepare('UPDATE users SET phone = ? WHERE id = ?').run(result.phone, req.user.id)
+      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id)
+      syncUserProfile(user)
+      ok(res, { phone: result.phone })
+    } catch (e) {
+      fail(res, 500, e.message)
+    }
   })
 
   app.get('/meta/cities', async (_req, res) => {
@@ -130,8 +226,74 @@ export function createApp() {
   app.get('/meta/settings', (_req, res) => {
     ok(res, {
       agreementVersion: getSetting('transport_agreement_version'),
-      brandName: '宠途空运'
+      brandName: '宠途空运',
+      payMock: config.payMock || !config.wxMchId || !config.wxPayKey,
+      wxMockLogin: config.wxMockLogin || !config.wxAppSecret
     })
+  })
+
+  /** 微信支付 V2 异步通知（XML） */
+  app.post('/pay/wx-notify', async (req, res) => {
+    const xml = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : String(req.body || '')
+    try {
+      const parsed = wechat.parsePayNotify(xml)
+      const hit = dbForResource('order', parsed.orderId)
+      if (!hit) {
+        res.type('text/xml').send(wechat.notifyFailXml('order not found'))
+        return
+      }
+      const order = hit.udb.prepare('SELECT * FROM orders WHERE id = ?').get(parsed.orderId)
+      if (!order) {
+        res.type('text/xml').send(wechat.notifyFailXml('order not found'))
+        return
+      }
+      if (Number(order.paid_cents) !== Number(parsed.totalFee)) {
+        res.type('text/xml').send(wechat.notifyFailXml('amount mismatch'))
+        return
+      }
+      if (order.status === STATUS.PENDING_PAY) {
+        await markPaidAndSubmitSf({ orderId: order.id, sf, notify })
+      }
+      res.type('text/xml').send(wechat.notifySuccessXml())
+    } catch (e) {
+      console.error('[pay/wx-notify]', e.message)
+      res.type('text/xml').send(wechat.notifyFailXml(e.message))
+    }
+  })
+
+  /** 开发联调：小程序 → 本机 → 顺丰产品推荐（校验码不进小程序） */
+  app.post('/debug/sf/product-recommend', async (req, res) => {
+    if (!config.sfPartnerId || !config.sfCheckWord) {
+      return fail(res, 400, '请在 wx-project/server/.env 填写 SF_PARTNER_ID 与 SF_CHECKWORD 后重启服务')
+    }
+    try {
+      const client = createSfOpenClient({
+        partnerId: config.sfPartnerId,
+        checkWord: config.sfCheckWord,
+        env: config.sfEnv,
+        monthlyCard: config.sfMonthlyCard || undefined
+      })
+      const result = await client.productRecommend(req.body || {})
+      ok(res, {
+        env: config.sfEnv,
+        endpoint: client.endpoint,
+        partnerId: config.sfPartnerId,
+        productCount: (result.msgData && result.msgData.productList && result.msgData.productList.length) || 0,
+        productList: (result.msgData && result.msgData.productList) || [],
+        fastigiumControlStrategyList: (result.msgData && result.msgData.fastigiumControlStrategyList) || [],
+        platform: {
+          apiResultCode: result.platform && result.platform.apiResultCode,
+          apiErrorMsg: result.platform && result.platform.apiErrorMsg
+        },
+        business: {
+          success: result.business && result.business.success,
+          errorCode: result.business && result.business.errorCode,
+          errorMsg: result.business && result.business.errorMsg
+        }
+      })
+    } catch (e) {
+      fail(res, 502, e.message || '顺丰调用失败', { code: e.code, raw: e.raw })
+    }
   })
 
   app.post('/session/ops', (req, res) => {
@@ -159,7 +321,9 @@ export function createApp() {
   })
 
   app.get('/addresses', auth, (req, res) => {
-    const rows = db.prepare('SELECT * FROM addresses WHERE user_id = ? ORDER BY created_at DESC').all(req.user.id)
+    const rows = getUserDb(req.user.id)
+      .prepare('SELECT * FROM addresses WHERE user_id = ? ORDER BY created_at DESC')
+      .all(req.user.id)
     ok(res, { list: rows })
   })
 
@@ -167,10 +331,25 @@ export function createApp() {
     const a = req.body || {}
     if (!validAddress(a)) return fail(res, 400, '地址不完整')
     const id = dbUuid()
-    db.prepare(
-      `INSERT INTO addresses (id, user_id, role_hint, name, phone, province, city, district, detail, lat, lng, created_at)
+    getUserDb(req.user.id)
+      .prepare(
+        `INSERT INTO addresses (id, user_id, role_hint, name, phone, province, city, district, detail, lat, lng, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(id, req.user.id, a.role_hint || null, a.name, a.phone, a.province, a.city, a.district, a.detail, a.lat || null, a.lng || null, nowIso())
+      )
+      .run(
+        id,
+        req.user.id,
+        a.role_hint || null,
+        a.name,
+        a.phone,
+        a.province,
+        a.city,
+        a.district,
+        a.detail,
+        a.lat || null,
+        a.lng || null,
+        nowIso()
+      )
     ok(res, { id })
   })
 
@@ -196,12 +375,9 @@ export function createApp() {
   app.post('/uploads', auth, upload.single('file'), (req, res) => {
     if (!req.file) return fail(res, 400, '未选择文件')
     const id = dbUuid()
-    db.prepare('INSERT INTO uploads (id, user_id, filename, created_at) VALUES (?, ?, ?, ?)').run(
-      id,
-      req.user.id,
-      req.file.filename,
-      nowIso()
-    )
+    getUserDb(req.user.id)
+      .prepare('INSERT INTO uploads (id, user_id, filename, created_at) VALUES (?, ?, ?, ?)')
+      .run(id, req.user.id, req.file.filename, nowIso())
     ok(res, { fileId: id, url: `/uploads/${req.file.filename}` })
   })
 
@@ -216,7 +392,10 @@ export function createApp() {
 
   app.post('/orders/:id/mock-pay', auth, async (req, res) => {
     if (!config.payMock) return fail(res, 403, '未开启模拟支付')
-    const o = db.prepare('SELECT * FROM orders WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id)
+    if (ownerOf('order', req.params.id) !== req.user.id) return fail(res, 404, '订单不存在')
+    const o = getUserDb(req.user.id)
+      .prepare('SELECT * FROM orders WHERE id = ? AND user_id = ?')
+      .get(req.params.id, req.user.id)
     if (!o) return fail(res, 404, '订单不存在')
     if (o.status !== STATUS.PENDING_PAY) return fail(res, 400, '订单状态不可支付')
     await markPaidAndSubmitSf({ orderId: o.id, sf, notify })
@@ -226,64 +405,82 @@ export function createApp() {
   app.get('/orders', auth, (req, res) => {
     ensureDemoOrders(req.user.id)
     const demo = listDemoOrders(req.user.id)
-    const rows = db.prepare('SELECT id FROM orders WHERE user_id = ? ORDER BY created_at DESC').all(req.user.id)
+    const rows = getUserDb(req.user.id)
+      .prepare('SELECT id FROM orders WHERE user_id = ? ORDER BY created_at DESC')
+      .all(req.user.id)
     ok(res, { list: [...demo, ...rows.map((r) => getOrder(r.id))] })
   })
 
   app.get('/pets', auth, (req, res) => {
-    ok(res, { list: db.prepare('SELECT * FROM pets WHERE user_id = ? ORDER BY created_at DESC').all(req.user.id) })
+    ok(res, {
+      list: getUserDb(req.user.id)
+        .prepare('SELECT * FROM pets WHERE user_id = ? ORDER BY created_at DESC')
+        .all(req.user.id)
+    })
   })
 
   app.post('/pets', auth, (req, res) => {
     const { name, species, breed, weightKg, gender, note } = req.body || {}
     if (!name || !String(name).trim()) return fail(res, 400, '请填写宠物名')
     const id = dbUuid()
-    db.prepare(
-      'INSERT INTO pets (id, user_id, name, species, breed, weight_kg, gender, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(id, req.user.id, name.trim(), species || '', breed || '', Number(weightKg) || null, gender || '', note || '', nowIso())
+    getUserDb(req.user.id)
+      .prepare(
+        'INSERT INTO pets (id, user_id, name, species, breed, weight_kg, gender, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      )
+      .run(
+        id,
+        req.user.id,
+        name.trim(),
+        species || '',
+        breed || '',
+        Number(weightKg) || null,
+        gender || '',
+        note || '',
+        nowIso()
+      )
     ok(res, { id })
   })
 
   app.delete('/pets/:id', auth, (req, res) => {
-    db.prepare('DELETE FROM pets WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id)
+    getUserDb(req.user.id).prepare('DELETE FROM pets WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id)
     ok(res, { ok: true })
   })
 
   app.get('/quarantine-docs', auth, (req, res) => {
-    ok(res, { list: db.prepare('SELECT * FROM quarantine_docs WHERE user_id = ? ORDER BY created_at DESC').all(req.user.id) })
+    ok(res, {
+      list: getUserDb(req.user.id)
+        .prepare('SELECT * FROM quarantine_docs WHERE user_id = ? ORDER BY created_at DESC')
+        .all(req.user.id)
+    })
   })
 
   app.post('/quarantine-docs', auth, (req, res) => {
     const { title, fileId } = req.body || {}
     if (!title || !fileId) return fail(res, 400, '请填写名称并上传文件')
     const id = dbUuid()
-    db.prepare('INSERT INTO quarantine_docs (id, user_id, title, file_id, created_at) VALUES (?, ?, ?, ?, ?)').run(
-      id,
-      req.user.id,
-      title,
-      fileId,
-      nowIso()
-    )
+    getUserDb(req.user.id)
+      .prepare('INSERT INTO quarantine_docs (id, user_id, title, file_id, created_at) VALUES (?, ?, ?, ?, ?)')
+      .run(id, req.user.id, title, fileId, nowIso())
     ok(res, { id })
   })
 
   app.delete('/quarantine-docs/:id', auth, (req, res) => {
-    db.prepare('DELETE FROM quarantine_docs WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id)
+    getUserDb(req.user.id)
+      .prepare('DELETE FROM quarantine_docs WHERE id = ? AND user_id = ?')
+      .run(req.params.id, req.user.id)
     ok(res, { ok: true })
   })
 
   app.get('/orders/:id', auth, (req, res) => {
     const demo = getDemoOrder(req.params.id, req.user.id)
     if (demo) return ok(res, demo)
-    const raw = db.prepare('SELECT user_id FROM orders WHERE id = ?').get(req.params.id)
-    if (!raw || raw.user_id !== req.user.id) return fail(res, 404, '订单不存在')
+    if (ownerOf('order', req.params.id) !== req.user.id) return fail(res, 404, '订单不存在')
     ok(res, getOrder(req.params.id))
   })
 
   app.post('/orders/:id/cancel', auth, async (req, res) => {
     try {
-      const raw = db.prepare('SELECT user_id FROM orders WHERE id = ?').get(req.params.id)
-      if (!raw || raw.user_id !== req.user.id) return fail(res, 404, '订单不存在')
+      if (ownerOf('order', req.params.id) !== req.user.id) return fail(res, 404, '订单不存在')
       const order = getOrder(req.params.id)
       const data = await cancelOrder({ order, sf, wechat })
       ok(res, { ...data, order: getOrder(req.params.id) })
@@ -293,8 +490,7 @@ export function createApp() {
   })
 
   app.post('/orders/:id/surcharge/pay', auth, async (req, res) => {
-    const raw = db.prepare('SELECT user_id FROM orders WHERE id = ?').get(req.params.id)
-    if (!raw || raw.user_id !== req.user.id) return fail(res, 404, '订单不存在')
+    if (ownerOf('order', req.params.id) !== req.user.id) return fail(res, 404, '订单不存在')
     try {
       paySurcharge(getOrder(req.params.id))
       ok(res, getOrder(req.params.id))
@@ -304,22 +500,18 @@ export function createApp() {
   })
 
   app.put('/orders/:id/invoice-title', auth, (req, res) => {
-    const raw = db.prepare('SELECT user_id FROM orders WHERE id = ?').get(req.params.id)
-    if (!raw || raw.user_id !== req.user.id) return fail(res, 404, '订单不存在')
+    if (ownerOf('order', req.params.id) !== req.user.id) return fail(res, 404, '订单不存在')
     const { title, taxNo, email } = req.body || {}
-    db.prepare('UPDATE orders SET invoice_title = ?, invoice_tax_no = ?, invoice_email = ?, updated_at = ? WHERE id = ?').run(
-      title || '',
-      taxNo || '',
-      email || '',
-      nowIso(),
-      req.params.id
-    )
+    getUserDb(req.user.id)
+      .prepare(
+        'UPDATE orders SET invoice_title = ?, invoice_tax_no = ?, invoice_email = ?, updated_at = ? WHERE id = ?'
+      )
+      .run(title || '', taxNo || '', email || '', nowIso(), req.params.id)
     ok(res, getOrder(req.params.id))
   })
 
   app.post('/orders/:id/invoice/issue', auth, async (req, res) => {
-    const raw = db.prepare('SELECT user_id FROM orders WHERE id = ?').get(req.params.id)
-    if (!raw || raw.user_id !== req.user.id) return fail(res, 404, '订单不存在')
+    if (ownerOf('order', req.params.id) !== req.user.id) return fail(res, 404, '订单不存在')
     try {
       const result = await issueInvoice(getOrder(req.params.id), invoiceAdapter)
       ok(res, result)
@@ -337,36 +529,53 @@ export function createApp() {
 
   app.get('/admin/orders', adminAuth, (req, res) => {
     const status = req.query.status
-    const rows = status
-      ? db.prepare('SELECT id FROM orders WHERE status = ? ORDER BY created_at DESC').all(status)
-      : db.prepare('SELECT id FROM orders ORDER BY created_at DESC').all()
-    ok(res, { list: rows.map((r) => getOrder(r.id)) })
+    const rows = listOrderIndex(status || null)
+    ok(res, { list: rows.map((r) => getOrder(r.id)).filter(Boolean) })
+  })
+
+  app.get('/admin/users', adminAuth, (_req, res) => {
+    const users = db.prepare('SELECT id, openid, phone, nick_name, avatar_url, db_path, created_at FROM users ORDER BY created_at DESC').all()
+    ok(res, {
+      list: users.map((u) => ({
+        id: u.id,
+        openid: u.openid,
+        phone: u.phone || '',
+        nickName: u.nick_name || '',
+        avatarUrl: u.avatar_url || '',
+        dbPath: u.db_path || `users/${u.id}.sqlite`,
+        createdAt: u.created_at
+      })),
+      files: listUserDbFiles()
+    })
   })
 
   app.get('/admin/orders/:id', adminAuth, (req, res) => {
     const o = getOrder(req.params.id)
     if (!o) return fail(res, 404, '订单不存在')
-    const raw = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id)
-    ok(res, { ...o, rawSfError: raw.sf_error })
+    const hit = dbForResource('order', req.params.id)
+    const raw = hit.udb.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id)
+    ok(res, { ...o, rawSfError: raw.sf_error, userId: hit.userId })
   })
 
   app.post('/admin/orders/:id/sf-retry', adminAuth, async (req, res) => {
-    const raw = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id)
+    const hit = dbForResource('order', req.params.id)
+    if (!hit) return fail(res, 404, '订单不存在')
+    const raw = hit.udb.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id)
     if (!raw) return fail(res, 404, '订单不存在')
-    db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.PAID, nowIso(), raw.id)
+    hit.udb.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.PAID, nowIso(), raw.id)
     await markPaidAndSubmitSf({ orderId: raw.id, sf, notify })
     ok(res, getOrder(raw.id))
   })
 
   app.post('/admin/orders/:id/waybill', adminAuth, (req, res) => {
+    const hit = dbForResource('order', req.params.id)
+    if (!hit) return fail(res, 404, '订单不存在')
     const { waybillNo, sfOrderId } = req.body || {}
-    db.prepare('UPDATE orders SET sf_waybill_no = ?, sf_order_id = ?, status = ?, sf_error = NULL, updated_at = ? WHERE id = ?').run(
-      waybillNo,
-      sfOrderId || waybillNo,
-      STATUS.BOOKED,
-      nowIso(),
-      req.params.id
-    )
+    hit.udb
+      .prepare(
+        'UPDATE orders SET sf_waybill_no = ?, sf_order_id = ?, status = ?, sf_error = NULL, updated_at = ? WHERE id = ?'
+      )
+      .run(waybillNo, sfOrderId || waybillNo, STATUS.BOOKED, nowIso(), req.params.id)
     ok(res, getOrder(req.params.id))
   })
 
@@ -380,21 +589,29 @@ export function createApp() {
   })
 
   app.post('/admin/orders/:id/refund', adminAuth, async (req, res) => {
+    const hit = dbForResource('order', req.params.id)
+    if (!hit) return fail(res, 404, '订单不存在')
     await wechat.refund()
-    db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.REFUNDED, nowIso(), req.params.id)
+    hit.udb.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.REFUNDED, nowIso(), req.params.id)
     ok(res, getOrder(req.params.id))
   })
 
   app.post('/admin/orders/:id/surcharge', adminAuth, (req, res) => {
+    const hit = dbForResource('order', req.params.id)
+    if (!hit) return fail(res, 404, '订单不存在')
     const cents = Number((req.body || {}).surchargeCents)
-    db.prepare(
-      'UPDATE orders SET prev_transport_status = status, status = ?, surcharge_cents = ?, surcharge_paid = 0, updated_at = ? WHERE id = ?'
-    ).run(STATUS.SURCHARGE_PENDING, cents, nowIso(), req.params.id)
+    hit.udb
+      .prepare(
+        'UPDATE orders SET prev_transport_status = status, status = ?, surcharge_cents = ?, surcharge_paid = 0, updated_at = ? WHERE id = ?'
+      )
+      .run(STATUS.SURCHARGE_PENDING, cents, nowIso(), req.params.id)
     ok(res, getOrder(req.params.id))
   })
 
   app.post('/admin/orders/:id/mark-signed', adminAuth, (req, res) => {
-    db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.SIGNED, nowIso(), req.params.id)
+    const hit = dbForResource('order', req.params.id)
+    if (!hit) return fail(res, 404, '订单不存在')
+    hit.udb.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.SIGNED, nowIso(), req.params.id)
     ok(res, getOrder(req.params.id))
   })
 

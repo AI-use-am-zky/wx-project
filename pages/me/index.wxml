@@ -7,10 +7,13 @@
       </view>
     </view>
     <view class="profile" bindtap="tapUser">
-      <view class="ava">途</view>
+      <image wx:if="{{loggedIn && avatarUrl}}" class="ava-img" src="{{avatarUrl}}" mode="aspectFill" />
+      <view wx:else class="ava">{{loggedIn ? '途' : '登'}}</view>
       <view class="grow">
-        <view class="name">{{loggedIn ? (phone || '已登录') : '点击登录'}}</view>
-        <view class="sub">{{loggedIn ? '微信已授权 · 点击管理账号' : '登录后管理订单与资料'}}</view>
+        <view class="name">{{loggedIn ? (nickName || phone || '已登录') : '点击登录'}}</view>
+        <view class="sub">
+          {{loggedIn ? (needProfile ? '完善微信头像和昵称' : '微信账号已关联 · 点击管理资料') : '登录后管理订单与资料'}}
+        </view>
       </view>
       <view class="chev">›</view>
     </view>

@@ -6,7 +6,7 @@
 </swiper>
 
 <view class="btn-wrap">
-  <button class="btn" open-type="contact" plain="true">
+  <button class="kefu-btn" open-type="contact" plain="true">
     <image src="/images/kefu.png"></image>
   </button>
 </view>
@@ -37,7 +37,40 @@
         <view class="faint">{{toProvince || '省 / 市'}}</view>
       </picker>
     </view>
-    
+    <view class="btn go-book" bindtap="goBook">去下单</view>
+  </view>
+
+  <view class="guide-row">
+    <view class="guide-card" bindtap="goGuide" data-url="/pages/guide/ops">
+      <view class="guide-top">
+        <view class="guide-txt">
+          <view class="guide-t">操作指南</view>
+          <view class="guide-s">如何下单？</view>
+        </view>
+        <view class="guide-ico guide-ico-ops">单</view>
+      </view>
+      <view class="guide-go">›</view>
+    </view>
+    <view class="guide-card" bindtap="goGuide" data-url="/pages/guide/guarantee">
+      <view class="guide-top">
+        <view class="guide-txt">
+          <view class="guide-t">服务保障</view>
+          <view class="guide-s">安全如何保障？</view>
+        </view>
+        <view class="guide-ico guide-ico-safe">保</view>
+      </view>
+      <view class="guide-go">›</view>
+    </view>
+    <view class="guide-card" bindtap="goGuide" data-url="/pages/guide/faq">
+      <view class="guide-top">
+        <view class="guide-txt">
+          <view class="guide-t">常见问题</view>
+          <view class="guide-s">更多注意事项</view>
+        </view>
+        <view class="guide-ico guide-ico-faq">问</view>
+      </view>
+      <view class="guide-go">›</view>
+    </view>
   </view>
 
   <view class="trust">
@@ -105,4 +138,3 @@
   <view class="resume-x" catchtap="closeResume">×</view>
 </view>
 
-<!-- 注意：如果你使用了上面的 movable-area 代码，请删除底部的 <cs-float />，以免重复 -->

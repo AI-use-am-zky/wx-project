@@ -1,0 +1,34 @@
+.page { padding-bottom: 48rpx; }
+.tip .h2 { font-size: 34rpx; font-weight: 650; }
+.tip .sub { color: #6b736e; font-size: 26rpx; line-height: 1.5; }
+.mt-8 { margin-top: 16rpx; }
+.form { margin-top: 8rpx; }
+.avatar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: transparent;
+  border: none;
+  padding: 24rpx 0 8rpx;
+  margin: 0;
+  line-height: 1.4;
+}
+.avatar-btn::after { border: none; }
+.avatar {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  background: #e7f0eb;
+}
+.avatar-tip { margin-top: 16rpx; font-size: 24rpx; color: #6b736e; }
+.field {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 0;
+  border-top: 1rpx solid #eee7dc;
+}
+.label { width: 140rpx; color: #6b736e; font-size: 28rpx; }
+.nick-input { flex: 1; font-size: 30rpx; }
+.value { flex: 1; font-size: 30rpx; color: #1e4d3e; }
+.phone-btn { margin-top: 16rpx; }
+.save { margin: 32rpx 32rpx 0; }

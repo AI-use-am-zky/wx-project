@@ -1,48 +1,11 @@
+﻿import { v4 as uuid } from 'uuid'
+import { db, getUserDb, usersDir } from './db.js'
 import fs from 'fs'
 import path from 'path'
-import { fileURLToPath } from 'url'
-import { DatabaseSync } from 'node:sqlite'
-import { v4 as uuid } from 'uuid'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const dataDir = path.join(__dirname, '../data')
-fs.mkdirSync(dataDir, { recursive: true })
-
-const sessionDbPath = path.join(dataDir, 'session.sqlite')
-export const sessionDb = new DatabaseSync(sessionDbPath)
-sessionDb.exec('PRAGMA journal_mode = WAL')
-
-sessionDb.exec(`
-CREATE TABLE IF NOT EXISTS demo_orders (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  tab_key TEXT NOT NULL,
-  status TEXT NOT NULL,
-  payload_json TEXT NOT NULL,
-  paid_cents INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS badge_reads (
-  user_id TEXT NOT NULL,
-  tab_key TEXT NOT NULL,
-  read_at TEXT NOT NULL,
-  PRIMARY KEY (user_id, tab_key)
-);
-CREATE TABLE IF NOT EXISTS operations (
-  id TEXT PRIMARY KEY,
-  user_id TEXT,
-  type TEXT NOT NULL,
-  payload_json TEXT,
-  created_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS demo_seed (
-  user_id TEXT PRIMARY KEY,
-  seeded_at TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_demo_orders_user ON demo_orders(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_ops_user ON operations(user_id, created_at DESC);
-`)
+function nowIso() {
+  return new Date().toISOString()
+}
 
 const CITIES = [
   { code: 'beijing', name: '北京', province: '北京市' },
@@ -88,10 +51,6 @@ const STATUS_EVENTS = {
   signed: ['订单已支付', '已预约上门取件', '宠物已揽收', '航班运输中', '收件人已签收'],
   cancelled: ['订单已创建', '用户取消订单'],
   refunded: ['订单已支付', '订单已取消并退款']
-}
-
-function nowIso() {
-  return new Date().toISOString()
 }
 
 function randInt(min, max) {
@@ -204,39 +163,62 @@ function publicDemoOrder(row) {
 }
 
 export function logOperation({ userId, type, payload }) {
-  sessionDb.prepare(
+  if (!userId) return
+  const udb = getUserDb(userId)
+  udb.prepare(
     'INSERT INTO operations (id, user_id, type, payload_json, created_at) VALUES (?, ?, ?, ?, ?)'
-  ).run(uuid(), userId || null, type, payload ? JSON.stringify(payload) : null, nowIso())
+  ).run(uuid(), userId, type, payload ? JSON.stringify(payload) : null, nowIso())
 }
 
 export function listOperations(userId, limit = 100) {
-  const rows = userId
-    ? sessionDb.prepare(
-        'SELECT * FROM operations WHERE user_id = ? ORDER BY created_at DESC LIMIT ?'
-      ).all(userId, limit)
-    : sessionDb.prepare('SELECT * FROM operations ORDER BY created_at DESC LIMIT ?').all(limit)
-  return rows.map((r) => ({
-    id: r.id,
-    userId: r.user_id,
-    type: r.type,
-    payload: r.payload_json ? JSON.parse(r.payload_json) : null,
-    createdAt: r.created_at
-  }))
+  if (userId) {
+    const rows = getUserDb(userId)
+      .prepare('SELECT * FROM operations WHERE user_id = ? ORDER BY created_at DESC LIMIT ?')
+      .all(userId, limit)
+    return rows.map((r) => ({
+      id: r.id,
+      userId: r.user_id,
+      type: r.type,
+      payload: r.payload_json ? JSON.parse(r.payload_json) : null,
+      createdAt: r.created_at
+    }))
+  }
+  const out = []
+  for (const u of db.prepare('SELECT id FROM users').all()) {
+    try {
+      const rows = getUserDb(u.id)
+        .prepare('SELECT * FROM operations ORDER BY created_at DESC LIMIT ?')
+        .all(limit)
+      for (const r of rows) {
+        out.push({
+          id: r.id,
+          userId: r.user_id,
+          type: r.type,
+          payload: r.payload_json ? JSON.parse(r.payload_json) : null,
+          createdAt: r.created_at
+        })
+      }
+    } catch {
+      /* skip */
+    }
+  }
+  return out.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, limit)
 }
 
 export function ensureDemoOrders(userId) {
   if (!userId) return { seeded: false, counts: {} }
-  const existed = sessionDb.prepare('SELECT user_id FROM demo_seed WHERE user_id = ?').get(userId)
+  const udb = getUserDb(userId)
+  const existed = udb.prepare('SELECT user_id FROM demo_seed WHERE user_id = ?').get(userId)
   if (existed) return { seeded: false, counts: countByTab(userId) }
 
-  const insertOrder = sessionDb.prepare(
+  const insertOrder = udb.prepare(
     `INSERT INTO demo_orders (id, user_id, tab_key, status, payload_json, paid_cents, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   )
-  const insertSeed = sessionDb.prepare('INSERT INTO demo_seed (user_id, seeded_at) VALUES (?, ?)')
+  const insertSeed = udb.prepare('INSERT INTO demo_seed (user_id, seeded_at) VALUES (?, ?)')
 
   const counts = { pending: 0, transit: 0, done: 0, cancelled: 0 }
-  sessionDb.exec('BEGIN')
+  udb.exec('BEGIN')
   try {
     for (const tab of Object.keys(TAB_STATUSES)) {
       const n = randInt(1, 5)
@@ -256,9 +238,9 @@ export function ensureDemoOrders(userId) {
       }
     }
     insertSeed.run(userId, nowIso())
-    sessionDb.exec('COMMIT')
+    udb.exec('COMMIT')
   } catch (e) {
-    sessionDb.exec('ROLLBACK')
+    udb.exec('ROLLBACK')
     throw e
   }
   logOperation({ userId, type: 'demo_seed', payload: { counts } })
@@ -266,9 +248,9 @@ export function ensureDemoOrders(userId) {
 }
 
 function countByTab(userId) {
-  const rows = sessionDb.prepare(
-    'SELECT tab_key, COUNT(*) c FROM demo_orders WHERE user_id = ? GROUP BY tab_key'
-  ).all(userId)
+  const rows = getUserDb(userId)
+    .prepare('SELECT tab_key, COUNT(*) c FROM demo_orders WHERE user_id = ? GROUP BY tab_key')
+    .all(userId)
   const counts = { pending: 0, transit: 0, done: 0, cancelled: 0 }
   for (const r of rows) counts[r.tab_key] = r.c
   return counts
@@ -276,22 +258,27 @@ function countByTab(userId) {
 
 export function listDemoOrders(userId) {
   if (!userId) return []
-  const rows = sessionDb.prepare(
-    'SELECT * FROM demo_orders WHERE user_id = ? ORDER BY created_at DESC'
-  ).all(userId)
+  const rows = getUserDb(userId)
+    .prepare('SELECT * FROM demo_orders WHERE user_id = ? ORDER BY created_at DESC')
+    .all(userId)
   return rows.map(publicDemoOrder)
 }
 
 export function getDemoOrder(id, userId) {
-  const row = userId
-    ? sessionDb.prepare('SELECT * FROM demo_orders WHERE id = ? AND user_id = ?').get(id, userId)
-    : sessionDb.prepare('SELECT * FROM demo_orders WHERE id = ?').get(id)
-  return publicDemoOrder(row)
+  if (userId) {
+    const row = getUserDb(userId).prepare('SELECT * FROM demo_orders WHERE id = ? AND user_id = ?').get(id, userId)
+    return publicDemoOrder(row)
+  }
+  for (const u of db.prepare('SELECT id FROM users').all()) {
+    const row = getUserDb(u.id).prepare('SELECT * FROM demo_orders WHERE id = ?').get(id)
+    if (row) return publicDemoOrder(row)
+  }
+  return null
 }
 
 export function getBadges(userId) {
   const counts = countByTab(userId)
-  const reads = sessionDb.prepare('SELECT tab_key FROM badge_reads WHERE user_id = ?').all(userId)
+  const reads = getUserDb(userId).prepare('SELECT tab_key FROM badge_reads WHERE user_id = ?').all(userId)
   const readSet = new Set(reads.map((r) => r.tab_key))
   const out = {}
   for (const tab of Object.keys(TAB_STATUSES)) {
@@ -303,12 +290,26 @@ export function getBadges(userId) {
 
 export function markBadgeSeen(userId, tab) {
   if (!TAB_STATUSES[tab]) return getBadges(userId)
-  sessionDb.prepare(
-    `INSERT INTO badge_reads (user_id, tab_key, read_at) VALUES (?, ?, ?)
-     ON CONFLICT(user_id, tab_key) DO UPDATE SET read_at = excluded.read_at`
-  ).run(userId, tab, nowIso())
+  getUserDb(userId)
+    .prepare(
+      `INSERT INTO badge_reads (user_id, tab_key, read_at) VALUES (?, ?, ?)
+       ON CONFLICT(user_id, tab_key) DO UPDATE SET read_at = excluded.read_at`
+    )
+    .run(userId, tab, nowIso())
   logOperation({ userId, type: 'badge_seen', payload: { tab } })
   return getBadges(userId)
+}
+
+export function listUserDbFiles() {
+  if (!fs.existsSync(usersDir)) return []
+  return fs
+    .readdirSync(usersDir)
+    .filter((f) => f.endsWith('.sqlite'))
+    .map((f) => ({
+      file: f,
+      userId: f.replace(/\.sqlite$/, ''),
+      path: path.join('users', f).replace(/\\/g, '/')
+    }))
 }
 
 export { TAB_STATUSES }

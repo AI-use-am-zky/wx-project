@@ -1,0 +1,10 @@
+<view class="safe page">
+  <view class="card tip">
+    <view class="h2">顺丰产品推荐 · 联调</view>
+    <view class="sub mt-8">走顺丰生产地址 bspgw.sf-express.com。校验码只放服务端 .env，勿写进小程序。</view>
+  </view>
+  <view class="btn {{loading ? 'disabled' : ''}}" bindtap="run">{{loading ? '请求中…' : '调用产品推荐'}}</view>
+  <view class="card result">
+    <text class="mono" selectable>{{resultText}}</text>
+  </view>
+</view>

@@ -19,7 +19,12 @@
     "pages/me/docs",
     "pages/me/coupons",
     "pages/me/messages",
-    "pages/me/settings"
+    "pages/me/settings",
+    "pages/me/profile",
+    "pages/guide/ops",
+    "pages/guide/guarantee",
+    "pages/guide/faq",
+    "pages/debug/sf-recommend"
   ],
   "window": {
     "navigationBarTextStyle": "white",
@@ -55,10 +60,5 @@
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json",
-  "lazyCodeLoading": "requiredComponents",
-  "permission": {
-    "scope.camera": {
-      "desc": "用于拍摄宠物近照、航空箱和检疫证明"
-    }
-  }
+  "lazyCodeLoading": "requiredComponents"
 }

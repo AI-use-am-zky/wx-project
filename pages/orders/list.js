@@ -49,6 +49,10 @@ Page({
     const tab = wx.getStorageSync('orderTab') || 'all'
     wx.removeStorageSync('orderTab')
     this.setData({ tab })
+    const ready = (getApp() && getApp().loginReady) || Promise.resolve()
+    ready.then(() => this.afterAuth()).catch(() => this.afterAuth())
+  },
+  afterAuth() {
     if (!isLoggedIn()) {
       this.setData({ needLogin: true, list: [] })
       return
@@ -86,7 +90,15 @@ Page({
         this.setData({ list: filterOrders(all, this.data.tab) })
         logOp('view_orders', { tab: this.data.tab, count: all.length })
       })
-      .catch(() => this.setData({ list: [] }))
+      .catch((e) => {
+        if (e && e.code === 401) {
+          login()
+            .then(() => this.load())
+            .catch(() => this.setData({ needLogin: true, list: [] }))
+          return
+        }
+        this.setData({ list: [] })
+      })
   },
   switchTab(e) {
     const tab = e.currentTarget.dataset.tab

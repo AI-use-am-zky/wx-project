@@ -1,0 +1,32 @@
+.page {
+  padding-bottom: 48rpx;
+}
+.tip .h2 {
+  font-size: 34rpx;
+  font-weight: 600;
+}
+.tip .sub {
+  color: #6b736e;
+  font-size: 26rpx;
+  line-height: 1.5;
+}
+.mt-8 {
+  margin-top: 16rpx;
+}
+.btn {
+  margin: 24rpx 32rpx;
+}
+.btn.disabled {
+  opacity: 0.6;
+}
+.result {
+  margin: 0 32rpx;
+}
+.mono {
+  display: block;
+  font-size: 22rpx;
+  line-height: 1.45;
+  color: #1e4d3e;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

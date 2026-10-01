@@ -22,7 +22,7 @@
     <view class="row-plain">
       <view>
         <view class="h2" style="font-size:30rpx">微信支付</view>
-        <view class="faint">模拟支付 · 演示环境</view>
+        <view class="faint">{{payMock ? '模拟支付 · 演示环境' : '支付给本服务商 · 微信官方收银台'}}</view>
       </view>
       <text class="chip">已选</text>
     </view>

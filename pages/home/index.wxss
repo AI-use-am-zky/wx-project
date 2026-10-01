@@ -16,38 +16,27 @@
   z-index: 999;
 }
 
-/* 2. 按钮样式：改成深绿色背景 */
-.btn {
-  /* 【核心修改】设置深绿色背景 */
-  background-color: #0f5e35 !important; 
-  
+/* 2. 客服浮动按钮 */
+.kefu-btn {
+  background-color: #0f5e35 !important;
   width: 100rpx !important;
   height: 100rpx !important;
   padding: 0 !important;
   margin: 0;
   border: none;
-  border-radius: 50%; /* 保持圆形 */
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  
-  /* 添加一点阴影增加立体感 */
-  box-shadow: 0 4rpx 12rpx rgba(15, 94, 53, 0.4); 
+  box-shadow: 0 4rpx 12rpx rgba(15, 94, 53, 0.4);
 }
-
-/* 清除按钮默认边框 */
-.btn::after {
-  border: none;
-}
-/* 图片填满按钮 */
-.btn image {
+.kefu-btn::after { border: none; }
+.kefu-btn image {
   width: 100%;
   height: 100%;
   display: block;
 }
-
-/* 点击放大动画 */
-.btn:active {
+.kefu-btn:active {
   transform: scale(1.2);
   transition: transform 0.15s ease;
 }
@@ -95,6 +84,72 @@
 }
 
 .route-card { padding: 36rpx 32rpx 32rpx; }
+.go-book { margin-top: 28rpx; }
+
+.guide-row {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+.guide-card {
+  flex: 1;
+  min-width: 0;
+  background: #eef6f1;
+  border-radius: 28rpx;
+  padding: 24rpx 18rpx 20rpx;
+  box-sizing: border-box;
+  position: relative;
+}
+.guide-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8rpx;
+  min-height: 110rpx;
+}
+.guide-txt { flex: 1; min-width: 0; }
+.guide-t {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1e4d3e;
+  line-height: 1.25;
+}
+.guide-s {
+  margin-top: 8rpx;
+  font-size: 20rpx;
+  color: #6b8a7a;
+  line-height: 1.35;
+}
+.guide-ico {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: #fff;
+}
+.guide-ico-ops { background: linear-gradient(145deg, #f0b35a, #e89a2e); }
+.guide-ico-safe { background: linear-gradient(145deg, #6dca8f, #3aa86a); }
+.guide-ico-faq { background: linear-gradient(145deg, #5bbf8a, #2f9d66); }
+.guide-go {
+  margin-top: 18rpx;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  border: 2rpx solid #1e4d3e;
+  color: #1e4d3e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .city-pair {
   display: flex;
   align-items: center;

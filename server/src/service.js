@@ -1,25 +1,49 @@
-import { db, uuid, nowIso, getSetting } from './db.js'
+import {
+  db,
+  uuid,
+  nowIso,
+  getSetting,
+  getUserDb,
+  indexResource,
+  dbForResource,
+  ownerOf
+} from './db.js'
+import { config } from './config.js'
 import { priceFromSfCost, priceFromRateCard, surchargeFromReweigh, refundAmount } from './domain/pricing.js'
 import { STATUS, isCollectedOrAfter, canIssueInvoice, transportStatusAfterSurcharge } from './domain/order-machine.js'
 import { validAddress, requireFields, BREEDS, ADDON_QUARANTINE_CENTS, insureFeeCents } from './http.js'
 
+function udbOfOrder(orderId) {
+  const hit = dbForResource('order', orderId)
+  if (!hit) return null
+  return hit.udb
+}
+
 export function lookupRateCard(fromCity, toCity, weightKg) {
-  const row = db.prepare(
-    `SELECT * FROM rate_cards WHERE from_city = ? AND to_city = ? AND min_kg <= ? AND max_kg > ? ORDER BY min_kg DESC LIMIT 1`
-  ).get(fromCity, toCity, weightKg, weightKg)
+  const row = db
+    .prepare(
+      `SELECT * FROM rate_cards WHERE from_city = ? AND to_city = ? AND min_kg <= ? AND max_kg > ? ORDER BY min_kg DESC LIMIT 1`
+    )
+    .get(fromCity, toCity, weightKg, weightKg)
   if (row) return row.sell_cents
   const any = db.prepare('SELECT sell_cents FROM rate_cards ORDER BY sell_cents DESC LIMIT 1').get()
   return any ? any.sell_cents : 88000
 }
 
 export function addEvent(orderId, type, text, extra) {
-  db.prepare(
+  const udb = udbOfOrder(orderId)
+  if (!udb) return
+  udb.prepare(
     'INSERT INTO order_events (id, order_id, type, text, at, extra_json) VALUES (?, ?, ?, ?, ?, ?)'
   ).run(uuid(), orderId, type, text, nowIso(), extra ? JSON.stringify(extra) : null)
 }
 
 export function getEvents(orderId) {
-  return db.prepare('SELECT type, text, at, extra_json FROM order_events WHERE order_id = ? ORDER BY at DESC').all(orderId)
+  const udb = udbOfOrder(orderId)
+  if (!udb) return []
+  return udb
+    .prepare('SELECT type, text, at, extra_json FROM order_events WHERE order_id = ? ORDER BY at DESC')
+    .all(orderId)
     .map((e) => ({ type: e.type, text: e.text, at: e.at, extra: e.extra_json ? JSON.parse(e.extra_json) : null }))
 }
 
@@ -44,9 +68,12 @@ export async function createQuote({ userId, sender, receiver, species, breed, we
     const q = await sf.quotePetAir({
       fromCity: sender.city,
       toCity: receiver.city,
+      sender,
+      receiver,
       weightKg: kg,
       species,
-      breed
+      breed,
+      pickupDate
     })
     priced = priceFromSfCost(q.costCents, markup, minFee)
     rawSf = q.raw
@@ -55,8 +82,18 @@ export async function createQuote({ userId, sender, receiver, species, breed, we
   }
   const id = uuid()
   const expires = new Date(Date.now() + 25 * 60 * 1000).toISOString()
-  const payload = { sender, receiver, species, breed, weightKg: kg, pickupDate, petName: petName || '', petNote: petNote || '' }
-  db.prepare(
+  const payload = {
+    sender,
+    receiver,
+    species,
+    breed,
+    weightKg: kg,
+    pickupDate,
+    petName: petName || '',
+    petNote: petNote || ''
+  }
+  const udb = getUserDb(userId)
+  udb.prepare(
     `INSERT INTO quotes (id, user_id, payload_json, sf_cost_cents, sell_freight_cents, service_fee_cents, quote_source, expires_at, raw_sf_json, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
@@ -71,11 +108,14 @@ export async function createQuote({ userId, sender, receiver, species, breed, we
     rawSf ? JSON.stringify(rawSf) : null,
     nowIso()
   )
+  indexResource('quote', id, userId)
   return publicQuote(id)
 }
 
 export function publicQuote(id) {
-  const q = db.prepare('SELECT * FROM quotes WHERE id = ?').get(id)
+  const hit = dbForResource('quote', id)
+  if (!hit) return null
+  const q = hit.udb.prepare('SELECT * FROM quotes WHERE id = ?').get(id)
   if (!q) return null
   const payload = JSON.parse(q.payload_json)
   return {
@@ -159,7 +199,8 @@ export async function createOrder({ userId, body, sf, wechat, notify }) {
     err.status = 400
     throw err
   }
-  const q = db.prepare('SELECT * FROM quotes WHERE id = ? AND user_id = ?').get(body.quoteId, userId)
+  const udb = getUserDb(userId)
+  const q = udb.prepare('SELECT * FROM quotes WHERE id = ? AND user_id = ?').get(body.quoteId, userId)
   if (!q) {
     const err = new Error('报价不存在')
     err.status = 404
@@ -196,17 +237,39 @@ export async function createOrder({ userId, body, sf, wechat, notify }) {
       ...(addons.insureCents ? [{ key: 'insure', name: '顺丰保价', cents: addons.insureCents }] : [])
     ]
   }
-  db.prepare(
+  udb.prepare(
     `INSERT INTO orders (id, user_id, quote_id, status, payload_json, paid_cents, declared_weight_kg, invoice_status, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(orderId, userId, q.id, STATUS.PENDING_PAY, JSON.stringify(payload), paidCents, quotePayload.weightKg, 'draft', nowIso(), nowIso())
+  indexResource('order', orderId, userId)
   addEvent(orderId, 'created', '订单已创建，待支付')
-  const payParams = wechat.mockPayParams(orderId)
-  return { orderId, paidCents, payParams, payMock: true }
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId)
+  let payParams
+  let payMock = Boolean(config.payMock) || !config.wxMchId || !config.wxPayKey
+  try {
+    if (payMock) {
+      payParams = wechat.mockPayParams(orderId)
+    } else {
+      payParams = await wechat.createJsapiPayment({
+        orderId,
+        openid: user && user.openid,
+        totalFee: paidCents,
+        description: '宠途空运-' + (quotePayload.petName || quotePayload.breed || '订单')
+      })
+      payMock = Boolean(payParams && payParams.mock)
+    }
+  } catch (e) {
+    const err = new Error(e.message || '创建支付失败')
+    err.status = 502
+    throw err
+  }
+  return { orderId, paidCents, payParams, payMock }
 }
 
 export function getOrder(id) {
-  const o = db.prepare('SELECT * FROM orders WHERE id = ?').get(id)
+  const udb = udbOfOrder(id)
+  if (!udb) return null
+  const o = udb.prepare('SELECT * FROM orders WHERE id = ?').get(id)
   if (!o) return null
   return decorateOrder(o)
 }
@@ -237,11 +300,13 @@ function decorateOrder(o) {
 }
 
 export async function markPaidAndSubmitSf({ orderId, sf, notify }) {
-  const o = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId)
+  const udb = udbOfOrder(orderId)
+  if (!udb) return
+  const o = udb.prepare('SELECT * FROM orders WHERE id = ?').get(orderId)
   if (!o) return
   if (o.status !== STATUS.PENDING_PAY && o.status !== STATUS.PAID) return
   const payload = JSON.parse(o.payload_json)
-  db.prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ?").run(STATUS.SF_SUBMITTING, nowIso(), orderId)
+  udb.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.SF_SUBMITTING, nowIso(), orderId)
   addEvent(orderId, 'paid', '支付成功')
   notify.send('order.paid', { orderId, summary: '新单已支付' })
   try {
@@ -254,13 +319,13 @@ export async function markPaidAndSubmitSf({ orderId, sf, notify }) {
       pickupDate: payload.pickupDate,
       declaredValueCents: payload.declaredValueCents
     })
-    db.prepare(
+    udb.prepare(
       'UPDATE orders SET status = ?, sf_waybill_no = ?, sf_order_id = ?, sf_error = NULL, updated_at = ? WHERE id = ?'
     ).run(STATUS.BOOKED, created.waybillNo, created.sfOrderId, nowIso(), orderId)
     addEvent(orderId, 'sf_ok', `顺丰已下单，运单号 ${created.waybillNo}`)
     addEvent(orderId, 'pickup_scheduled', `已预约上门取件日 ${payload.pickupDate}，具体时段由顺丰安排`)
   } catch (e) {
-    db.prepare('UPDATE orders SET status = ?, sf_error = ?, updated_at = ? WHERE id = ?').run(
+    udb.prepare('UPDATE orders SET status = ?, sf_error = ?, updated_at = ? WHERE id = ?').run(
       STATUS.SF_FAILED,
       e.message || 'sf error',
       nowIso(),
@@ -272,13 +337,19 @@ export async function markPaidAndSubmitSf({ orderId, sf, notify }) {
 }
 
 export async function cancelOrder({ order, sf, wechat }) {
+  const udb = udbOfOrder(order.id)
+  if (!udb) {
+    const err = new Error('订单不存在')
+    err.status = 404
+    throw err
+  }
   if (isCollectedOrAfter(order.status)) {
     const err = new Error('已揽收不可自助退款，请走改期流程')
     err.status = 400
     throw err
   }
   if (order.status === STATUS.PENDING_PAY) {
-    db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.CANCELLED, nowIso(), order.id)
+    udb.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.CANCELLED, nowIso(), order.id)
     addEvent(order.id, 'cancel_ok', '未支付订单已取消')
     return { refundCents: 0 }
   }
@@ -294,7 +365,7 @@ export async function cancelOrder({ order, sf, wechat }) {
     try {
       await sf.cancelOrder(order.sfOrderId)
     } catch (e) {
-      db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.CANCEL_REQUESTED, nowIso(), order.id)
+      udb.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.CANCEL_REQUESTED, nowIso(), order.id)
       addEvent(order.id, 'cancel_requested', '已申请取消，顺丰撤单失败，待人工处理')
       const err = new Error('顺丰暂无法撤单，已转人工处理')
       err.status = 409
@@ -302,12 +373,18 @@ export async function cancelOrder({ order, sf, wechat }) {
     }
   }
   await wechat.refund()
-  db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.REFUNDED, nowIso(), order.id)
+  udb.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.REFUNDED, nowIso(), order.id)
   addEvent(order.id, 'cancel_ok', hasWaybill ? `已取消，扣除手续费 ${(fee / 100).toFixed(2)} 元` : '已全额退款')
   return r
 }
 
 export function applyReweigh(order, actualKg) {
+  const udb = udbOfOrder(order.id)
+  if (!udb) {
+    const err = new Error('订单不存在')
+    err.status = 404
+    throw err
+  }
   const ignore = Number(getSetting('reweigh_ignore_kg'))
   const result = surchargeFromReweigh({
     declaredKg: order.declaredWeightKg,
@@ -315,12 +392,12 @@ export function applyReweigh(order, actualKg) {
     sellFreightCents: (order.lines || []).find((l) => l.key === 'air_dtd')?.cents || order.paidCents,
     ignoreKg: ignore
   })
-  db.prepare('UPDATE orders SET actual_weight_kg = ?, updated_at = ? WHERE id = ?').run(actualKg, nowIso(), order.id)
+  udb.prepare('UPDATE orders SET actual_weight_kg = ?, updated_at = ? WHERE id = ?').run(actualKg, nowIso(), order.id)
   if (result.ignored || result.lighter || result.surchargeCents === 0) {
     addEvent(order.id, 'reweigh', `复秤 ${actualKg}kg，1kg 内忽略或无需补差`)
     return result
   }
-  db.prepare(
+  udb.prepare(
     'UPDATE orders SET status = ?, prev_transport_status = ?, surcharge_cents = ?, surcharge_paid = 0, updated_at = ? WHERE id = ?'
   ).run(STATUS.SURCHARGE_PENDING, order.status, result.surchargeCents, nowIso(), order.id)
   addEvent(order.id, 'surcharge', `复秤超差，需补差 ${(result.surchargeCents / 100).toFixed(2)} 元`)
@@ -328,14 +405,21 @@ export function applyReweigh(order, actualKg) {
 }
 
 export function paySurcharge(order) {
+  const udb = udbOfOrder(order.id)
+  if (!udb) {
+    const err = new Error('订单不存在')
+    err.status = 404
+    throw err
+  }
   if (order.status !== STATUS.SURCHARGE_PENDING) {
     const err = new Error('当前无需补差')
     err.status = 400
     throw err
   }
   const next = transportStatusAfterSurcharge(order.prev_transport_status)
-  db.prepare('UPDATE orders SET status = ?, surcharge_paid = 1, paid_cents = paid_cents + surcharge_cents, updated_at = ? WHERE id = ?')
-    .run(next, nowIso(), order.id)
+  udb.prepare(
+    'UPDATE orders SET status = ?, surcharge_paid = 1, paid_cents = paid_cents + surcharge_cents, updated_at = ? WHERE id = ?'
+  ).run(next, nowIso(), order.id)
   addEvent(order.id, 'surcharge_paid', '补差支付成功')
 }
 
@@ -348,16 +432,26 @@ export async function issueInvoice(order, invoiceAdapter) {
     err.status = 400
     throw err
   }
-  const raw = db.prepare('SELECT * FROM orders WHERE id = ?').get(order.id)
+  const udb = udbOfOrder(order.id)
+  if (!udb) {
+    const err = new Error('订单不存在')
+    err.status = 404
+    throw err
+  }
+  const raw = udb.prepare('SELECT * FROM orders WHERE id = ?').get(order.id)
   if (raw.status === STATUS.REFUNDING) {
     const err = new Error('退款处理中不可开票')
     err.status = 400
     throw err
   }
   const result = await invoiceAdapter.issue(order)
-  db.prepare('UPDATE orders SET invoice_status = ?, updated_at = ? WHERE id = ?').run(result.issued ? 'issued' : 'draft', nowIso(), order.id)
+  udb.prepare('UPDATE orders SET invoice_status = ?, updated_at = ? WHERE id = ?').run(
+    result.issued ? 'issued' : 'draft',
+    nowIso(),
+    order.id
+  )
   addEvent(order.id, 'invoice', result.mark || '发票已受理')
   return result
 }
 
-export { BREEDS }
+export { BREEDS, ownerOf }

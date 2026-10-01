@@ -5,14 +5,36 @@ import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 dotenv.config({ path: path.join(__dirname, '../.env') })
 
+function csv(value) {
+  return String(value || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
 export const config = {
   port: Number(process.env.PORT || 8787),
   wxMockLogin: process.env.WX_MOCK_LOGIN !== 'false',
   payMock: process.env.PAY_MOCK !== 'false',
   sfMock: process.env.SF_MOCK !== 'false',
   sfQuoteFail: process.env.SF_QUOTE_FAIL === 'true',
+  /** sbox | prod | hk；默认生产，避免误用沙箱假数据 */
+  sfEnv: process.env.SF_ENV || 'prod',
+  sfPartnerId: process.env.SF_PARTNER_ID || '',
+  sfCheckWord: process.env.SF_CHECKWORD || '',
+  sfMonthlyCard: process.env.SF_MONTHLY_CARD || '',
+  /** 逗号分隔，产品推荐里优先选用的 productCode */
+  sfPreferredProductCodes: csv(process.env.SF_PREFERRED_PRODUCT_CODES),
   wxAppId: process.env.WX_APP_ID || '',
   wxAppSecret: process.env.WX_APP_SECRET || '',
+  wxMchId: process.env.WX_MCH_ID || '',
+  wxPayKey: process.env.WX_PAY_KEY || '',
+  /** 支付结果通知完整 URL，如 https://api.example.com/pay/wx-notify */
+  wxPayNotifyUrl: process.env.WX_PAY_NOTIFY_URL || '',
+  wxPayClientIp: process.env.WX_PAY_CLIENT_IP || '127.0.0.1',
+  wxSubscribeTplPickup: process.env.WX_SUBSCRIBE_TPL_PICKUP || '',
+  wxSubscribeTplAlert: process.env.WX_SUBSCRIBE_TPL_ALERT || '',
+  wxSubscribeTplSigned: process.env.WX_SUBSCRIBE_TPL_SIGNED || '',
   adminPassword: process.env.ADMIN_PASSWORD || 'change-me',
   adminNotifyWebhook: process.env.ADMIN_NOTIFY_WEBHOOK || '',
   defaults: {

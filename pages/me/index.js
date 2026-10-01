@@ -1,12 +1,26 @@
-const { isLoggedIn, login } = require('../../utils/auth')
+const { isLoggedIn, login, needsProfile, errMessage } = require('../../utils/auth')
 const { go, goOrders } = require('../../utils/nav')
 const { fetchBadges, markBadgeSeen, logOp } = require('../../utils/session')
 const { isPickingMedia } = require('../../utils/media-pick')
+const { request } = require('../../utils/request')
+const config = require('../../utils/config')
+
+const DEFAULT_AVATAR =
+  'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0'
+
+function displayAvatar(url) {
+  if (!url) return ''
+  if (/^https?:\/\//.test(url) || url.indexOf('wxfile://') === 0) return url
+  return config.baseUrl + url
+}
 
 Page({
   data: {
     loggedIn: false,
     phone: '',
+    nickName: '',
+    avatarUrl: '',
+    needProfile: false,
     padTop: 0,
     navH: 32,
     navPad: 24,
@@ -14,23 +28,54 @@ Page({
   },
   onLoad() {
     const mb = wx.getMenuButtonBoundingClientRect()
-    const sys = wx.getSystemInfoSync()
     this.setData({
       padTop: 0,
       navPad: mb.top,
       navH: mb.height
     })
-    this._statusBar = sys.statusBarHeight
   },
   onShow() {
     if (isPickingMedia()) return
-    const user = wx.getStorageSync('user') || {}
+    const ready = (getApp() && getApp().loginReady) || Promise.resolve()
+    ready.then(() => this.afterAuth()).catch(() => this.afterAuth())
+  },
+  afterAuth() {
+    if (!isLoggedIn()) {
+      this.setData({
+        loggedIn: false,
+        phone: '',
+        nickName: '',
+        avatarUrl: '',
+        needProfile: false,
+        badges: { pending: 0, transit: 0, done: 0, cancelled: 0 }
+      })
+      logOp('open_me', {})
+      return
+    }
+    request({ url: '/auth/me' })
+      .then((data) => {
+        const user = data.user || {}
+        wx.setStorageSync('user', user)
+        this.applyUser(user)
+        this.loadBadges()
+        logOp('open_me', {})
+      })
+      .catch(() => {
+        const user = wx.getStorageSync('user') || {}
+        this.applyUser(user)
+        this.loadBadges()
+      })
+  },
+  applyUser(user) {
+    const nickName = user.nickName || ''
+    const avatarUrl = displayAvatar(user.avatarUrl)
     this.setData({
-      loggedIn: isLoggedIn(),
-      phone: user.phone || ''
+      loggedIn: true,
+      phone: user.phone || '',
+      nickName,
+      avatarUrl,
+      needProfile: needsProfile(user)
     })
-    this.loadBadges()
-    logOp('open_me', {})
   },
   loadBadges() {
     if (!isLoggedIn()) {
@@ -49,11 +94,28 @@ Page({
       .catch(() => {})
   },
   tapUser() {
-    if (this.data.loggedIn) {
-      wx.navigateTo({ url: '/pages/me/settings' })
+    if (!this.data.loggedIn) {
+      wx.showLoading({ title: '登录中' })
+      login()
+        .then((data) => {
+          wx.hideLoading()
+          const user = (data && data.user) || wx.getStorageSync('user') || {}
+          this.applyUser(user)
+          this.loadBadges()
+          // 官方流程：登录只拿 openid；头像昵称需用户主动填写
+          if (needsProfile(user) || (data && data.needProfile)) {
+            wx.navigateTo({ url: '/pages/me/profile' })
+          } else {
+            wx.showToast({ title: '登录成功', icon: 'success' })
+          }
+        })
+        .catch((e) => {
+          wx.hideLoading()
+          wx.showToast({ title: errMessage(e), icon: 'none', duration: 3500 })
+        })
       return
     }
-    login().then(() => this.onShow()).catch((e) => wx.showToast({ title: e.message || '登录失败', icon: 'none' }))
+    wx.navigateTo({ url: '/pages/me/profile' })
   },
   goMsg() {
     go('/pages/me/messages')

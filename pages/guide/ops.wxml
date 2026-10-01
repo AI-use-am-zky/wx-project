@@ -1,0 +1,132 @@
+<view class="guide-page">
+  <view class="guide-hero">
+    <view class="tag">宠物专运 · 流程详解</view>
+    <view class="title">三步，把爱宠安心送到</view>
+    <view class="desc">让您的爱宠，每一次出发都安心到家</view>
+  </view>
+
+  <view class="guide-body">
+    <view class="nav-card">
+      <view class="nav-item">
+        <view class="nav-dot">前</view>
+        <view class="nav-t">出发前</view>
+        <view class="nav-s">查线路 · 备箱证</view>
+      </view>
+      <view class="nav-item">
+        <view class="nav-dot">当</view>
+        <view class="nav-t">出发当天</view>
+        <view class="nav-s">选送发 · 接护宠</view>
+      </view>
+      <view class="nav-item">
+        <view class="nav-dot">到</view>
+        <view class="nav-t">到达到家</view>
+        <view class="nav-s">送达 · 健康观察</view>
+      </view>
+    </view>
+
+    <view class="sec">
+      <view class="sec-head">
+        <view class="sec-no">01</view>
+        <view class="sec-title">出发前，准备好这些</view>
+      </view>
+      <view class="sec-sub">先确认你的城市是否已开通服务，把准备工作做好</view>
+      <view class="sec-card">
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">先看能不能寄，再下单</view>
+            <view class="block-desc">打开“顺丰速运”小程序 进入“宠物专运”专区，输入出发目的地自测校验线路。</view>
+            <view class="tip tip-ok">能运送：填好线路信息即可下单。</view>
+            <view class="tip tip-warn">暂时无法服务：线路未开通，更多城市陆续上线。</view>
+          </view>
+        </view>
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">有疑问，随时问客服</view>
+            <view class="block-desc">长按微信客服图标，联系服务管家专人解答。</view>
+          </view>
+        </view>
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">准备① 航空箱 <text class="tag-opt">选备</text></view>
+            <view class="block-desc">宠物坐飞机的专用笼，可自备，也可下单时选择对应规格购买（符合航空标准）。</view>
+          </view>
+        </view>
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">准备② 检疫证明 <text class="tag-req">必备</text></view>
+            <view class="block-desc">运输宠物需办理“动物检疫合格证明”，需提前办理。</view>
+            <view class="tip tip-warn">有效期仅 3-5 天！建议临行前再办，免得过期。（家中代办服务陆续上线）</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="sec">
+      <view class="sec-head">
+        <view class="sec-no">02</view>
+        <view class="sec-title">出发当天，准时送出发</view>
+      </view>
+      <view class="sec-sub">准时完成送达，全程给你报平安</view>
+      <view class="sec-card">
+        <view class="choose-label">选一种送宠方式</view>
+        <view class="method">
+          <view class="method-h">方式一 · 自己送自己接</view>
+          <view class="method-sub">送到机场货站</view>
+          <view class="method-li"><text class="d">●</text><text>按约定时间送到指定货站，迟到可能赶不上飞机。</text></view>
+          <view class="method-li"><text class="d">●</text><text>航班有变，自动改最快航班。</text></view>
+          <view class="method-li"><text class="d">●</text><text>当天无航班，免费送合作宠物医院休息，次日最早班发出。</text></view>
+        </view>
+        <view class="method">
+          <view class="method-h">方式二 · 小哥上门接，上门送</view>
+          <view class="method-sub">顺丰上门接</view>
+          <view class="method-li"><text class="d">●</text><text>在家等，专车上门接、送宠物。</text></view>
+          <view class="method-li"><text class="d">●</text><text>配专属管家，加企业微信对接。</text></view>
+          <view class="method-li"><text class="d">●</text><text>途中免费拍照/视频，实时报平安。</text></view>
+        </view>
+        <view class="tip tip-warn">任何方式请联系服务管家确认，顺丰将优先保障爱宠安全并妥善安置。</view>
+      </view>
+    </view>
+
+    <view class="sec">
+      <view class="sec-head">
+        <view class="sec-no">03</view>
+        <view class="sec-title">到达到家，安全又安心</view>
+      </view>
+      <view class="sec-sub">待宠取出，到家后让它好好休息</view>
+      <view class="sec-card">
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">取宠物：上门送 或 自己取</view>
+            <view class="block-desc">提前电话确认，可选择送货到家，或到指定货站自取。</view>
+          </view>
+        </view>
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">没能及时接，怎么办？</view>
+            <view class="block-desc">未能及时接或联系不上，免费陪护 2 小时。</view>
+            <view class="tip tip-danger">超 2 小时会送合作宠物医院寄养，寄存费用自理。</view>
+          </view>
+        </view>
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">接回家，先让它静一静</view>
+            <view class="block-desc">长途飞行宠物情绪起伏大。</view>
+            <view class="tip tip-warn">回家避免大量喂食，先静养，不要急着逗弄。</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="footer-note">
+      <view>每一程，顺丰宠物专运都在用心守护</view>
+      <view>让爱宠平安到达每一个家</view>
+    </view>
+  </view>
+</view>

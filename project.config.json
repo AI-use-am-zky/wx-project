@@ -1,64 +1,20 @@
 {
   "compileType": "miniprogram",
-  "libVersion": "trial",
+  "libVersion": "3.5.5",
   "packOptions": {
     "ignore": [
-      {
-        "value": "server",
-        "type": "folder"
-      },
-      {
-        "value": "admin",
-        "type": "folder"
-      },
-      {
-        "value": "docs",
-        "type": "folder"
-      },
-      {
-        "value": "node_modules",
-        "type": "folder"
-      },
-      {
-        "value": "2-design/pages",
-        "type": "folder"
-      },
-      {
-        "value": "2-design/index.html",
-        "type": "file"
-      },
-      {
-        "value": "2-design/assets/app.css",
-        "type": "file"
-      },
-      {
-        "value": "2-design/assets/app.js",
-        "type": "file"
-      },
-      {
-        "value": "2-design/assets/tab",
-        "type": "folder"
-      },
-      {
-        "value": "2-design/assets/HomepageBanner",
-        "type": "folder"
-      },
-      {
-        "value": "2-design/assets/banner/1.png",
-        "type": "file"
-      },
-      {
-        "value": "2-design/assets/banner/z-image_00021(1).png",
-        "type": "file"
-      },
-      {
-        "value": "2-design/assets/banner/1.png",
-        "type": "file"
-      },
-      {
-        "value": "2-design/assets/banner/z-image_00021(1).png",
-        "type": "file"
-      }
+      { "value": "server", "type": "folder" },
+      { "value": "admin", "type": "folder" },
+      { "value": "docs", "type": "folder" },
+      { "value": "node_modules", "type": "folder" },
+      { "value": "2-design", "type": "folder" },
+      { "value": "README.md", "type": "file" },
+      { "value": "images/tab-home.svg", "type": "file" },
+      { "value": "images/tab-home-active.svg", "type": "file" },
+      { "value": "images/tab-me.svg", "type": "file" },
+      { "value": "images/tab-me-active.svg", "type": "file" },
+      { "value": "images/tab-order.svg", "type": "file" },
+      { "value": "images/tab-order-active.svg", "type": "file" }
     ],
     "include": []
   },
@@ -76,7 +32,7 @@
       "outputPath": ""
     },
     "uglifyFileName": false,
-    "uploadWithSourceMap": true,
+    "uploadWithSourceMap": false,
     "packNpmManually": false,
     "minifyWXSS": true,
     "localPlugins": false,
@@ -91,6 +47,6 @@
     "tabIndent": "auto",
     "tabSize": 2
   },
-  "appid": "wxca048e0324f78bd4",
+  "appid": "wx8ad97b60b0982085",
   "simulatorPluginLibVersion": {}
 }

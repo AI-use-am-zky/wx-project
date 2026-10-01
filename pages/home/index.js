@@ -7,9 +7,9 @@ const { isPickingMedia, clearMediaPick } = require('../../utils/media-pick')
 Page({
   data: {
 	swiperList: [
-      { id: 0, url: '/2-design/assets/banner/1.jpg' },
-      { id: 1, url: '/2-design/assets/banner/2.jpg' },
-      { id: 2, url: '/2-design/assets/banner/3.jpg' }
+      { id: 0, url: '/images/banner/1.jpg' },
+      { id: 1, url: '/images/banner/2.jpg' },
+      { id: 2, url: '/images/banner/3.jpg' }
     ],
     fromName: '',
     toName: '',
@@ -131,5 +131,10 @@ Page({
     requireLoginPage().then(() => {
       wx.navigateTo({ url: '/pages/book/addresses' })
     })
+  },
+  goGuide(e) {
+    const url = e.currentTarget.dataset.url
+    if (!url) return
+    wx.navigateTo({ url })
   }
 })

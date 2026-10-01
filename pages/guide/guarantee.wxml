@@ -1,0 +1,150 @@
+<view class="guide-page">
+  <view class="guide-hero">
+    <view class="tag">宠物专运 · 服务保障</view>
+    <view class="title">把爱宠交给我们，放心</view>
+    <view class="desc">尊享运送 · 超时必赔</view>
+  </view>
+
+  <view class="guide-body">
+    <view class="nav-card">
+      <view class="nav-item">
+        <view class="nav-dot">资</view>
+        <view class="nav-t">资质合规</view>
+        <view class="nav-s">官方直营</view>
+      </view>
+      <view class="nav-item">
+        <view class="nav-dot">视</view>
+        <view class="nav-t">全程可视</view>
+        <view class="nav-s">实时追踪</view>
+      </view>
+      <view class="nav-item">
+        <view class="nav-dot">赔</view>
+        <view class="nav-t">超时必赔</view>
+        <view class="nav-s">承诺兑现</view>
+      </view>
+    </view>
+
+    <view class="sec">
+      <view class="sec-head">
+        <view class="sec-no">01</view>
+        <view class="sec-title">官方直营，资质合规</view>
+      </view>
+      <view class="sec-sub">正规资质打造，合规流程把关</view>
+      <view class="sec-card">
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">权威资质，合规运营</view>
+            <view class="block-desc">严格按照民航宠物运输标准执行，严选线路均持有小动物伴侣运输或空铁运许可，专业有保障。</view>
+          </view>
+        </view>
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">严守健康防线</view>
+            <view class="block-desc">出发前须验核防疫证明和狂犬疫苗记录（须在有效期内），从源头杜绝弱病托运，护好每只毛孩子。</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="sec">
+      <view class="sec-head">
+        <view class="sec-no">02</view>
+        <view class="sec-title">环境舒适，全程透明</view>
+      </view>
+      <view class="sec-sub">宽敞整洁，行踪随时可见</view>
+      <view class="sec-card">
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">独立有氧舱</view>
+            <view class="block-desc">优先获取预定独立有氧舱位，恒温更适宜、新风循环，让爱宠一路呼吸顺畅。</view>
+          </view>
+        </view>
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">优先登机、优先卸机</view>
+            <view class="block-desc">最后登机，最先卸机，尽量避免和减少机场的暴晒和寒冷等待。</view>
+          </view>
+        </view>
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">猫狗分开，独立安置</view>
+            <view class="block-desc">使用航空专用运输箱，猫狗分设，单笼摆放，稳固靠墙，减少互相侵扰。</view>
+          </view>
+        </view>
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">全程轨迹可追踪</view>
+            <view class="block-desc">从上门接宠 -> 网点核验 -> 上机 -> 到达领取全链路监控，关键节点专人打卡，动态自动推送，随时掌握行程。</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="sec">
+      <view class="sec-head">
+        <view class="sec-no">03</view>
+        <view class="sec-title">专属管家，1对1护航</view>
+      </view>
+      <view class="sec-sub">全程专人对接，不让对接有焦虑</view>
+      <view class="sec-card">
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">企微专属客服，全天在线</view>
+            <view class="block-desc">下单即匹配专属管家，1对1答疑，从行前准备、值机指导到在途回访，实时通知，全程不掉线。</view>
+          </view>
+        </view>
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">实时影像，看得见的安心</view>
+            <view class="block-desc">在提取、中转等关键环节，管家主动发送爱宠照片/视频，缓解分离焦虑。</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="sec">
+      <view class="sec-head">
+        <view class="sec-no">04</view>
+        <view class="sec-title">完善预案，医疗应急</view>
+      </view>
+      <view class="sec-sub">各种应急预案，全程不掉链</view>
+      <view class="sec-card">
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">绿色就医通道</view>
+            <view class="block-desc">全国各个网点均合作专业兽医，途中有异常立即就近送医；运送全程以宠为核心，全力呵护。</view>
+          </view>
+        </view>
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">航班延误/取消保障</view>
+            <view class="block-desc">优先免费改签最近航班；当天飞不了，免费安置到恒温寄宿处，定时喂食喂水。</view>
+          </view>
+        </view>
+        <view class="item">
+          <view class="item-dot"></view>
+          <view class="item-body">
+            <view class="block-title">陆运接驳有风控</view>
+            <view class="block-desc">精选专业运宠车，严控车内温度；遇故障或拥堵立即派车或就近安置，绝不把宠物留在闷热封闭车厢。</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="pay-box">
+      <view class="h">超时必赔，说到做到</view>
+      <view class="p">任何方式造成延误异常情况，我们将优先保障爱宠安全并妥善安置。</view>
+    </view>
+    <view class="footer-note">用专业与责任，守护毛孩子每一次旅程</view>
+  </view>
+</view>

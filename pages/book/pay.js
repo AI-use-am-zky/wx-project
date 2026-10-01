@@ -14,10 +14,31 @@ function addrLine(a) {
   return [a.city, a.district, a.detail].filter(Boolean).join(' ')
 }
 
+function invokePay(payParams) {
+  return new Promise((resolve, reject) => {
+    if (!payParams || payParams.mock) {
+      reject({ message: '缺少真实支付参数' })
+      return
+    }
+    wx.requestPayment({
+      timeStamp: payParams.timeStamp,
+      nonceStr: payParams.nonceStr,
+      package: payParams.package,
+      signType: payParams.signType || 'MD5',
+      paySign: payParams.paySign,
+      success: resolve,
+      fail: (err) => {
+        reject({ message: (err && err.errMsg) || '支付取消或失败' })
+      }
+    })
+  })
+}
+
 Page({
   data: {
     agreed: false,
     needPhone: false,
+    payMock: true,
     agreementVersion: 'v1',
     summary: {
       pet: '',
@@ -40,6 +61,7 @@ Page({
       const r = b.receiver || {}
       this.setData({
         needPhone: !user.phone,
+        payMock: settings.payMock !== false,
         agreementVersion: settings.agreementVersion || 'v1',
         summary: {
           pet: [b.petName, b.breed, b.weightKg ? b.weightKg + 'kg' : '', cityLabel(b.fromCity) && cityLabel(b.toCity) ? cityLabel(b.fromCity) + ' → ' + cityLabel(b.toCity) : '']
@@ -67,6 +89,10 @@ Page({
   onPhone(e) {
     const code = e.detail && e.detail.code
     if (!code) {
+      if (!this.data.payMock && getApp().globalData.settings && getApp().globalData.settings.wxMockLogin === false) {
+        wx.showToast({ title: '需要授权手机号', icon: 'none' })
+        return
+      }
       return request({ url: '/auth/wx-phone', method: 'POST', data: { phone: '13800000000' } })
         .then((d) => {
           const user = wx.getStorageSync('user') || {}
@@ -74,6 +100,7 @@ Page({
           wx.setStorageSync('user', user)
           this.setData({ needPhone: false })
         })
+        .catch((err) => wx.showToast({ title: err.message || '授权失败', icon: 'none' }))
     }
     request({ url: '/auth/wx-phone', method: 'POST', data: { code } })
       .then((d) => {
@@ -87,6 +114,10 @@ Page({
   pay() {
     if (!this.data.agreed) {
       wx.showToast({ title: '请先同意协议', icon: 'none' })
+      return
+    }
+    if (this.data.needPhone) {
+      wx.showToast({ title: '请先授权手机号', icon: 'none' })
       return
     }
     const b = getBook()
@@ -113,7 +144,13 @@ Page({
       }
     })
       .then((data) => {
-        return request({ url: `/orders/${data.orderId}/mock-pay`, method: 'POST' }).then(() => data.orderId)
+        const useMock = data.payMock || (data.payParams && data.payParams.mock) || this.data.payMock
+        if (useMock) {
+          return request({ url: `/orders/${data.orderId}/mock-pay`, method: 'POST' }).then(() => data.orderId)
+        }
+        wx.hideLoading()
+        wx.showLoading({ title: '拉起支付' })
+        return invokePay(data.payParams).then(() => data.orderId)
       })
       .then((orderId) => {
         wx.hideLoading()
