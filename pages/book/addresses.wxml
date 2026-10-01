@@ -1,15 +1,5 @@
 <view class="safe-b">
   <view class="card">
-    <view class="steps">
-      <view class="step on"><view class="n">1</view>城市</view>
-      <view class="step on"><view class="n">2</view>地址</view>
-      <view class="step"><view class="n">3</view>估价</view>
-      <view class="step"><view class="n">4</view>资料</view>
-      <view class="step"><view class="n">5</view>支付</view>
-    </view>
-  </view>
-
-  <view class="card">
     <view class="row-plain mb-8">
       <view class="h2">寄件人 · 上门取件</view>
       <text class="link" data-who="sender" bindtap="paste">粘贴识别</text>

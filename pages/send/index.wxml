@@ -1,0 +1,138 @@
+<view class="topbar" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+  <text class="topbar-title">寄快递</text>
+</view>
+<view style="height: {{navHeight}}px;"></view>
+
+<view class="addr-card">
+  <view class="addr-row">
+    <view class="pin pin-from">寄</view>
+    <view class="addr-main" bindtap="editWho" data-who="sender">
+      <view class="addr-top">
+        <text class="addr-name">{{sender.name || '寄件人信息'}}</text>
+        <text class="addr-phone" wx:if="{{sender.phone}}">{{senderPhoneMask}}</text>
+      </view>
+      <view class="addr-detail {{senderLine?'':'placeholder'}}">{{senderLine || '点击填写寄件地址，支持地址簿'}}</view>
+    </view>
+    <view class="addr-book" catchtap="openBook" data-who="sender">
+      <view class="book-ico">簿</view>
+      <text>地址簿</text>
+    </view>
+  </view>
+  <view class="swap-line">
+    <view class="swap-btn" bindtap="swap">⇌</view>
+  </view>
+  <view class="addr-row">
+    <view class="pin pin-to">收</view>
+    <view class="addr-main" bindtap="editWho" data-who="receiver">
+      <view class="addr-top">
+        <text class="addr-name">{{receiver.name || '收件人信息'}}</text>
+        <text class="addr-phone" wx:if="{{receiver.phone}}">{{receiverPhoneMask}}</text>
+      </view>
+      <view class="addr-detail {{receiverLine?'':'placeholder'}}">{{receiverLine || '点击填写收件地址，支持地址簿'}}</view>
+    </view>
+    <view class="addr-book" catchtap="openBook" data-who="receiver">
+      <view class="book-ico book-ico-to">簿</view>
+      <text>地址簿</text>
+    </view>
+  </view>
+  <view class="invite" wx:if="{{showInvite}}">
+    <text class="invite-txt">可填写对方手机，邀请对方补全收件地址</text>
+    <text class="invite-go" bindtap="editWho" data-who="receiver">去填写</text>
+    <text class="invite-x" catchtap="closeInvite">×</text>
+  </view>
+</view>
+
+<view class="panel">
+  <view class="mode">
+    <view class="mode-item on">
+      <text>上门取件</text>
+      <text class="heart">♥</text>
+    </view>
+    <view class="mode-item" bindtap="pointMode">服务点自寄</view>
+  </view>
+  <view class="row" bindtap="pickTime">
+    <text class="row-k">期望上门时间</text>
+    <view class="row-v">{{pickupTime}}<text class="chev">›</text></view>
+  </view>
+  <view class="row" bindtap="editGoods">
+    <view class="row-k">物品信息<text class="req">必填</text></view>
+    <view class="row-v {{goodsReady?'':'placeholder'}}">{{goodsText}}<text class="chev">›</text></view>
+  </view>
+  <view class="row" bindtap="pickPay">
+    <text class="row-k">付款方式</text>
+    <view class="row-v">{{payMethod}}<text class="chev">›</text></view>
+  </view>
+</view>
+
+<view class="panel">
+  <view class="panel-h">预计送达时间</view>
+  <view class="etas">
+    <view
+      wx:for="{{etas}}"
+      wx:key="key"
+      class="eta {{etaKey===item.key?'on':''}}"
+      data-key="{{item.key}}"
+      bindtap="pickEta"
+    >
+      <view class="eta-name">{{item.name}}</view>
+      <view class="eta-time">{{item.eta}}</view>
+      <view class="eta-price">{{item.price}}</view>
+    </view>
+  </view>
+  <view class="eta-note">具体航班和上门时段由承运方按可约时间安排，下单后在运单里查看。</view>
+</view>
+
+<view class="panel">
+  <view class="panel-h">保价服务</view>
+  <view class="insure" bindtap="pickInsure" data-mode="basic">
+    <view class="insure-main">
+      <view class="insure-name">基础保</view>
+      <view class="insure-sub">自定义保价金额，按声明价值约 1% 计费，最低 ¥1</view>
+      <input
+        wx:if="{{insureMode==='basic'}}"
+        class="insure-input"
+        type="digit"
+        placeholder="填写声明价值（元）"
+        value="{{declaredYuan}}"
+        bindinput="onDeclared"
+        catchtap="noop"
+      />
+    </view>
+    <view class="radio {{insureMode==='basic'?'on':''}}"></view>
+  </view>
+  <view class="insure" bindtap="pickInsure" data-mode="fixed">
+    <view class="insure-main">
+      <view class="insure-name">定额保</view>
+      <view class="fixed-row {{fixedYuan==='500'?'on':''}}" catchtap="pickFixed" data-yuan="500">
+        <text>保价金额 ¥500.00 元</text>
+        <text class="fee">保费 ¥5.00</text>
+      </view>
+      <view class="fixed-row {{fixedYuan==='1000'?'on':''}}" catchtap="pickFixed" data-yuan="1000">
+        <text>保价金额 ¥1000.00 元</text>
+        <text class="fee">保费 ¥10.00</text>
+      </view>
+    </view>
+    <view class="radio {{insureMode==='fixed'?'on':''}}"></view>
+  </view>
+</view>
+
+<view class="panel plain">
+  <view class="row" bindtap="pickCoupon">
+    <text class="row-k">优惠券</text>
+    <view class="row-v placeholder">无可用<text class="chev">›</text></view>
+  </view>
+  <view class="row">
+    <text class="row-k">备注</text>
+    <input class="remark" placeholder="给快递员捎话，请在此填写" value="{{remark}}" bindinput="onRemark" />
+  </view>
+</view>
+
+<view class="submit-space"></view>
+<view class="submit-bar">
+  <view class="sum" bindtap="showDetail">
+    <text class="sum-label">预估总价</text>
+    <text class="sum-price">¥{{totalText}}</text>
+    <text class="sum-detail">明细</text>
+  </view>
+  <view class="submit" bindtap="submit">下单</view>
+</view>

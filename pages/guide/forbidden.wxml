@@ -1,0 +1,26 @@
+<view class="page">
+  <view class="lead">宠途空运只承运一只活体宠物的门到门空运。下面这些情况不能下单，揽收时也会拒收。</view>
+
+  <view class="card">
+    <view class="h">宠物本身</view>
+    <view class="item">烈性犬，以及攻击性明显、无法安全交接的宠物</view>
+    <view class="item">生病、受伤、临产、刚做完手术，或打完疫苗还在观察期</view>
+    <view class="item">没有检疫证明，且不选择代办检疫</view>
+    <view class="item">一单超过一只宠物</view>
+  </view>
+
+  <view class="card">
+    <view class="h">包装</view>
+    <view class="item">不是专用航空箱，或箱子不能让宠物站立、转身、躺下</view>
+    <view class="item">箱门没有锁扣，通风不足，或箱底会漏水</view>
+    <view class="item">箱内放了食物、药品以外的杂物</view>
+  </view>
+
+  <view class="card">
+    <view class="h">不在本服务范围</view>
+    <view class="item">普通货物、食品、文件，以及非活体宠物用品单独寄送</view>
+    <view class="item">铁路、专车，或要求自送网点</view>
+  </view>
+
+  <view class="foot">拿不准时先问客服，再下单。检疫和航空箱要求也可以在「常见问题」里查看。</view>
+</view>

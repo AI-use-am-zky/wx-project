@@ -1,3 +1,4 @@
+<nav-bar title="宠途空运" />
 <!-- 轮播图容器 -->
 <swiper class="home-swiper" indicator-dots="{{true}}" autoplay="{{true}}" interval="3000" duration="500" circular="{{true}}">
   <swiper-item wx:for="{{swiperList}}" wx:key="id">
@@ -24,20 +25,44 @@
   </view>
 
   <view class="card route-card">
-    <view class="city-pair">
-      <picker class="city-col" mode="multiSelector" range="{{fromRange}}" value="{{fromIndex}}" data-role="from" bindchange="onPick" bindcolumnchange="onColumn">
-        <view class="lbl">出发</view>
-        <view class="city-name">{{fromName || '请选择'}}</view>
-        <view class="faint">{{fromProvince || '省 / 市'}}</view>
-      </picker>
-      <view class="swap" bindtap="swap">⇄</view>
-      <picker class="city-col right" mode="multiSelector" range="{{toRange}}" value="{{toIndex}}" data-role="to" bindchange="onPick" bindcolumnchange="onColumn">
-        <view class="lbl">到达</view>
-        <view class="city-name">{{toName || '请选择'}}</view>
-        <view class="faint">{{toProvince || '省 / 市'}}</view>
-      </picker>
+    <view class="addr">
+      <view class="rail"></view>
+      <view class="addr-row">
+        <view class="pin pin-from">寄</view>
+        <view class="addr-main" bindtap="editWho" data-who="sender">
+          <view class="addr-top">
+            <text class="addr-name">{{senderName}}</text>
+            <text class="addr-phone" wx:if="{{senderPhone}}">{{senderPhone}}</text>
+          </view>
+          <view class="addr-detail {{senderLine?'':'placeholder'}}">{{senderLine || '请选择寄件地址'}}</view>
+        </view>
+        <view class="addr-book" catchtap="openBook" data-who="sender">
+          <view class="book-ico"></view>
+          <text>地址簿</text>
+        </view>
+      </view>
+      <view class="addr-row">
+        <view class="pin pin-to">收</view>
+        <view class="addr-main" bindtap="editWho" data-who="receiver">
+          <view class="addr-top">
+            <text class="addr-name">{{receiverName}}</text>
+            <text class="addr-phone" wx:if="{{receiverPhone}}">{{receiverPhone}}</text>
+          </view>
+          <view class="addr-detail {{receiverLine?'':'placeholder'}}">{{receiverLine || '请选择收件地址'}}</view>
+        </view>
+        <view class="addr-book" catchtap="openBook" data-who="receiver">
+          <view class="book-ico"></view>
+          <text>地址簿</text>
+        </view>
+      </view>
     </view>
-    <view class="btn go-book" bindtap="goBook">去下单</view>
+    <view class="go-row">
+      <view class="go-book" bindtap="goBook">去下单</view>
+      <button class="card-kefu" open-type="contact">
+        <image src="/images/kefu.png" mode="aspectFill"></image>
+        <text>客服</text>
+      </button>
+    </view>
   </view>
 
   <view class="guide-row">
@@ -91,39 +116,39 @@
     </view>
   </view>
 
-  <view class="card">
-    <view class="row" style="border:none;padding:0 0 24rpx">
-      <view class="h2">寄宠只需 5 步</view>
-      <navigator class="link" url="/pages/book/cities">查看城市</navigator>
+  <view class="promo">
+    <view class="promo-head">
+      <view class="promo-copy">
+        <view class="promo-title">宠物托运选宠途</view>
+        <view class="promo-sub">专业可靠 | 全程护航</view>
+      </view>
+      <image class="promo-cat" src="/images/promo-cat.jpg" mode="aspectFit" />
     </view>
-    <view class="steps">
-      <view class="step on"><view class="n">1</view>选城市</view>
-      <view class="step"><view class="n">2</view>填地址</view>
-      <view class="step"><view class="n">3</view>估价</view>
-      <view class="step"><view class="n">4</view>资料</view>
-      <view class="step"><view class="n">5</view>支付</view>
+    <view class="promo-grid">
+      <view class="promo-cell">
+        <image src="/images/promo-plane.jpg" mode="aspectFit" />
+        <view class="promo-t">24h必达</view>
+        <view class="promo-s">专享资源，航空直达</view>
+      </view>
+      <view class="promo-cell">
+        <image src="/images/promo-dog.jpg" mode="aspectFit" />
+        <view class="promo-t">全链路追踪</view>
+        <view class="promo-s">全程保障，物流实时更新</view>
+      </view>
+      <view class="promo-cell">
+        <image src="/images/promo-price.jpg" mode="aspectFit" />
+        <view class="promo-t">透明价格</view>
+        <view class="promo-s">实时报价，清晰可查</view>
+      </view>
+      <view class="promo-cell">
+        <image src="/images/promo-service.jpg" mode="aspectFit" />
+        <view class="promo-t">专属客服</view>
+        <view class="promo-s">1对1服务，即时沟通</view>
+      </view>
     </view>
-  </view>
-
-  <view class="card">
-    <view class="h2" style="margin-bottom:24rpx">可加购服务</view>
-    <view class="svc-grid">
-      <view class="svc">
-        <view class="svc-t">购买航空箱</view>
-        <view class="svc-s">按承运方尺寸推荐，不租箱</view>
-      </view>
-      <view class="svc">
-        <view class="svc-t">代办检疫</view>
-        <view class="svc-s">也可自备证明上传</view>
-      </view>
-      <view class="svc">
-        <view class="svc-t">运单保价</view>
-        <view class="svc-s">按声明价值计费</view>
-      </view>
-      <view class="svc">
-        <view class="svc-t">自选取件日</view>
-        <view class="svc-s">时段由承运方安排</view>
-      </view>
+    <view class="promo-foot">
+      <text>MY ADORABLE PET</text>
+      <text>MY SUNSHINE</text>
     </view>
   </view>
 

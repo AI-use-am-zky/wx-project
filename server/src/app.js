@@ -353,6 +353,27 @@ export function createApp() {
     ok(res, { id })
   })
 
+  app.put('/addresses/:id', auth, (req, res) => {
+    const a = req.body || {}
+    if (!validAddress(a)) return fail(res, 400, '地址不完整')
+    const changed = getUserDb(req.user.id)
+      .prepare(
+        `UPDATE addresses SET name = ?, phone = ?, province = ?, city = ?, district = ?, detail = ?
+         WHERE id = ? AND user_id = ?`
+      )
+      .run(a.name, a.phone, a.province, a.city, a.district, a.detail, req.params.id, req.user.id)
+    if (!changed.changes) return fail(res, 404, '地址不存在')
+    ok(res, { id: req.params.id })
+  })
+
+  app.delete('/addresses/:id', auth, (req, res) => {
+    const changed = getUserDb(req.user.id)
+      .prepare('DELETE FROM addresses WHERE id = ? AND user_id = ?')
+      .run(req.params.id, req.user.id)
+    if (!changed.changes) return fail(res, 404, '地址不存在')
+    ok(res, { id: req.params.id })
+  })
+
   app.post('/quotes', auth, async (req, res) => {
     try {
       const data = await createQuote({ userId: req.user.id, ...req.body, sf })

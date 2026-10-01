@@ -1,11 +1,13 @@
 {
   "pages": [
     "pages/home/index",
+    "pages/send/index",
     "pages/orders/list",
     "pages/me/index",
     "pages/book/cities",
     "pages/book/addresses",
     "pages/book/pet-quote",
+    "pages/book/goods",
     "pages/book/quote-result",
     "pages/book/fulfill",
     "pages/book/pay",
@@ -24,6 +26,7 @@
     "pages/guide/ops",
     "pages/guide/guarantee",
     "pages/guide/faq",
+    "pages/guide/forbidden",
     "pages/debug/sf-recommend"
   ],
   "window": {
@@ -45,10 +48,16 @@
         "selectedIconPath": "images/tab-home-active.png"
       },
       {
+        "pagePath": "pages/send/index",
+        "text": "寄快递",
+        "iconPath": "images/tab-send.png",
+        "selectedIconPath": "images/tab-send-active.png"
+      },
+      {
         "pagePath": "pages/orders/list",
-        "text": "订单",
-        "iconPath": "images/tab-order.png",
-        "selectedIconPath": "images/tab-order-active.png"
+        "text": "查快递",
+        "iconPath": "images/tab-track.png",
+        "selectedIconPath": "images/tab-track-active.png"
       },
       {
         "pagePath": "pages/me/index",

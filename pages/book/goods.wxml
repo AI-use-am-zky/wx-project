@@ -1,0 +1,94 @@
+<view class="page">
+  <view class="block">
+    <view class="block-h">
+      <view class="block-title">物品名称<text class="req">必填</text></view>
+      <view class="forbid" bindtap="openForbid">
+        <text>禁寄物品</text>
+        <view class="info-i">i</view>
+      </view>
+    </view>
+    <view class="name-box">
+      <input
+        class="name-input"
+        placeholder="例如 奶茶"
+        placeholder-class="ph"
+        value="{{petName}}"
+        bindinput="onPetName"
+      />
+      <view wx:if="{{petName}}" class="clear" catchtap="clearName">×</view>
+    </view>
+  </view>
+
+  <view class="pack">
+    <view class="pack-h">
+      <view class="pack-title"><text class="pack-mark">箱</text>包装服务<text class="pack-sub">航空箱，下单可选购</text></view>
+      <text class="pack-more" bindtap="moreCrates">更多 ›</text>
+    </view>
+    <scroll-view class="crate-scroll" scroll-x>
+      <view class="crate-row">
+        <view
+          wx:for="{{crates}}"
+          wx:key="id"
+          class="crate {{crateSkuId===item.id?'on':''}}"
+          data-id="{{item.id}}"
+          bindtap="pickCrate"
+        >
+          <image class="crate-img" src="{{item.image}}" mode="aspectFit" />
+          <view class="crate-body">
+            <view class="crate-name">{{item.name}}</view>
+            <view class="crate-size">{{item.size_hint}}</view>
+            <view class="crate-bot">
+              <text class="crate-price">¥{{item.yuan}}</text>
+              <view class="radio {{crateSkuId===item.id?'on':''}}"></view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+    <view class="pack-note">不选则默认自备航空箱，支付前需要上传箱照。</view>
+  </view>
+
+  <view class="sheet">
+    <view class="metric">
+      <view class="metric-k">
+        预估总重量
+        <text class="tip">填写重量和体积，计费更精准</text>
+      </view>
+      <view class="stepper">
+        <view class="step-btn" data-dir="-1" bindtap="stepWeight">－</view>
+        <text class="step-val">{{weightText}}</text>
+        <text class="step-unit">kg</text>
+        <view class="step-btn" data-dir="1" bindtap="stepWeight">＋</view>
+      </view>
+    </view>
+    <view class="metric">
+      <view class="metric-k">
+        总体积
+        <text class="metric-hint">包裹较大时，补充体积预估费用更准确</text>
+      </view>
+      <view class="switch {{volumeOn?'on':''}}" bindtap="toggleVolume"></view>
+    </view>
+    <view class="dims" wx:if="{{volumeOn}}">
+      <input class="dim" type="digit" placeholder="长 cm" value="{{volumeL}}" data-k="volumeL" bindinput="onDim" />
+      <input class="dim" type="digit" placeholder="宽 cm" value="{{volumeW}}" data-k="volumeW" bindinput="onDim" />
+      <input class="dim" type="digit" placeholder="高 cm" value="{{volumeH}}" data-k="volumeH" bindinput="onDim" />
+    </view>
+    <view class="metric">
+      <view class="metric-k">件数</view>
+      <view class="stepper">
+        <view class="step-btn" data-dir="-1" bindtap="stepPiece">－</view>
+        <text class="step-val">{{pieceCount}}</text>
+        <text class="step-unit">件</text>
+        <view class="step-btn" data-dir="1" bindtap="stepPiece">＋</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="notice">
+    预估重量、体积，按取值较高的计费。计费重量、体积含最终包装，以揽收复秤为准，相差 1kg 以内不补差。一单一只宠物。
+  </view>
+</view>
+
+<view class="footer">
+  <view class="ok" bindtap="confirm">确定</view>
+</view>

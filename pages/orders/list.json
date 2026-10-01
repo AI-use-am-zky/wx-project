@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "我的订单"
+  "navigationStyle": "custom",
+  "navigationBarTextStyle": "white",
+  "navigationBarTitleText": "查快递",
+  "backgroundColor": "#f3efe8"
 }

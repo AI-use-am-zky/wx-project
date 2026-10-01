@@ -1,25 +1,45 @@
-<view class="safe-b">
-  <view class="empty card" wx:if="{{!list.length && !showForm}}">
-    <view class="h2">暂无保存的地址</view>
-    <view class="sub mt-8">可在下单时填写并保存到地址簿。</view>
-  </view>
-  <view class="card" wx:for="{{list}}" wx:key="id">
-    <view class="row-plain">
-      <view class="grow">
-        <view class="h2" style="font-size:30rpx">{{item.name}} {{item.phone}}</view>
-        <view class="sub mt-8">{{item.province}}{{item.city}}{{item.district}}{{item.detail}}</view>
-      </view>
+<view class="tabs">
+  <view class="tab on">寄中国内地<view class="tab-line"></view></view>
+  <view class="tab" bindtap="soon">寄中国港澳台</view>
+  <view class="tab" bindtap="soon">寄国际</view>
+</view>
+
+<view class="search">
+  <text class="search-ico">搜</text>
+  <input
+    class="search-input"
+    placeholder="请输入姓名/手机号/公司名称"
+    placeholder-class="ph"
+    value="{{keyword}}"
+    bindinput="onSearch"
+  />
+</view>
+
+<view class="list">
+  <view class="empty" wx:if="{{!shown.length && !showForm}}">暂无保存的地址</view>
+
+  <view class="card" wx:for="{{shown}}" wx:key="id" data-index="{{index}}" bindtap="choose">
+    <view class="who">
+      <text class="name">{{item.name}}</text>
+      <text class="phone">{{item.phoneMask}}</text>
+    </view>
+    <view class="addr">{{item.line}}</view>
+    <view class="ops" catchtap="noop">
+      <view class="op" catchtap="share" data-index="{{index}}">分享</view>
+      <view class="op" catchtap="edit" data-index="{{index}}">编辑</view>
+      <view class="op danger" catchtap="remove" data-index="{{index}}">删除</view>
     </view>
   </view>
-  <view class="card" wx:if="{{showForm}}">
-    <view class="h2 mb-8">新增地址</view>
+
+  <view class="card form" wx:if="{{showForm}}">
+    <view class="form-title">{{editingId ? '编辑地址' : '新增地址'}}</view>
     <view class="field">
       <view class="field-label">姓名</view>
       <input placeholder="开门联系人" value="{{form.name}}" data-k="name" bindinput="onF" />
     </view>
     <view class="field">
       <view class="field-label">手机</view>
-      <input placeholder="11 位手机号" value="{{form.phone}}" data-k="phone" bindinput="onF" />
+      <input placeholder="11 位手机号" type="number" maxlength="11" value="{{form.phone}}" data-k="phone" bindinput="onF" />
     </view>
     <view class="field">
       <view class="field-label">省</view>
@@ -37,10 +57,14 @@
       <view class="field-label">详细门牌</view>
       <input placeholder="路名、楼号、室" value="{{form.detail}}" data-k="detail" bindinput="onF" />
     </view>
-    <view class="btn" bindtap="save">保存</view>
+    <view class="form-actions">
+      <view class="ghost" bindtap="closeForm">取消</view>
+      <view class="btn save" bindtap="save">保存</view>
+    </view>
   </view>
 </view>
-<view class="footer-bar" wx:if="{{!showForm}}">
-  <view class="btn" bindtap="openForm">新增地址</view>
-</view>
 
+<view class="footer" wx:if="{{!showForm}}">
+  <view class="manage" bindtap="hintManage">管理</view>
+  <view class="add" bindtap="openForm">新增地址</view>
+</view>

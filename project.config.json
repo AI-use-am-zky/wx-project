@@ -14,7 +14,11 @@
       { "value": "images/tab-me.svg", "type": "file" },
       { "value": "images/tab-me-active.svg", "type": "file" },
       { "value": "images/tab-order.svg", "type": "file" },
-      { "value": "images/tab-order-active.svg", "type": "file" }
+      { "value": "images/tab-order-active.svg", "type": "file" },
+      { "value": "images/tab-send.svg", "type": "file" },
+      { "value": "images/tab-send-active.svg", "type": "file" },
+      { "value": "images/tab-track.svg", "type": "file" },
+      { "value": "images/tab-track-active.svg", "type": "file" }
     ],
     "include": []
   },

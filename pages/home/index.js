@@ -1,105 +1,91 @@
 const { getBook, saveBook, draftResume, hideResume } = require('../../utils/book')
 const { requireLoginPage } = require('../../utils/auth')
-const { TREE, PROVINCE_NAMES, rangeFor, cityFromIndex, cityLabel, samePlace, pickerFromCity } = require('../../utils/regions')
-const { logOp } = require('../../utils/session')
+const { findProvince, indexesFor, cityFromIndex, samePlace } = require('../../utils/regions')
 const { isPickingMedia, clearMediaPick } = require('../../utils/media-pick')
+
+function maskPhone(phone) {
+  const s = String(phone || '')
+  if (s.length < 7) return s
+  return s.slice(0, 3) + '****' + s.slice(-4)
+}
+
+function lineOf(addr) {
+  if (!addr) return ''
+  return [addr.province, addr.city, addr.district, addr.detail].filter(Boolean).join('')
+}
+
+function cityOf(addr) {
+  if (!addr || !addr.province) return null
+  const province = findProvince(addr.province)
+  if (!province) return null
+  const idx = indexesFor(province.name, addr.city)
+  return cityFromIndex(idx[0], idx[1])
+}
 
 Page({
   data: {
-	swiperList: [
+    swiperList: [
       { id: 0, url: '/images/banner/1.jpg' },
       { id: 1, url: '/images/banner/2.jpg' },
       { id: 2, url: '/images/banner/3.jpg' }
     ],
-    fromName: '',
-    toName: '',
-    fromProvince: '省 / 市',
-    toProvince: '省 / 市',
-    fromRange: [PROVINCE_NAMES, TREE[0].cities],
-    toRange: [PROVINCE_NAMES, TREE[0].cities],
-    fromIndex: [0, 0],
-    toIndex: [0, 0],
+    senderName: '寄件人信息',
+    receiverName: '收件人信息',
+    senderPhone: '',
+    receiverPhone: '',
+    senderLine: '',
+    receiverLine: '',
     resumeText: '',
     resumeUrl: ''
   },
   onShow() {
     if (isPickingMedia()) return
+    this.takePicked()
     this.sync()
     this.syncResume()
   },
+  takePicked() {
+    const picked = wx.getStorageSync('addressPicked')
+    if (!picked || !picked.role || !picked.address) return
+    wx.removeStorageSync('addressPicked')
+    const b = getBook()
+    const addr = picked.address
+    const city = cityOf(addr)
+    if (picked.role === 'sender') {
+      b.sender = addr
+      if (city) b.fromCity = city
+    } else {
+      b.receiver = addr
+      if (city) b.toCity = city
+    }
+    saveBook()
+  },
   sync() {
     const b = getBook()
-    const fromPick = pickerFromCity(b.fromCity)
-    const toPick = pickerFromCity(b.toCity)
+    const sender = b.sender || {}
+    const receiver = b.receiver || {}
     this.setData({
-      fromName: b.fromCity ? (b.fromCity.name || cityLabel(b.fromCity)) : '',
-      toName: b.toCity ? (b.toCity.name || cityLabel(b.toCity)) : '',
-      fromProvince: b.fromCity ? (b.fromCity.province || '省 / 市') : '省 / 市',
-      toProvince: b.toCity ? (b.toCity.province || '省 / 市') : '省 / 市',
-      fromIndex: b.fromCity ? fromPick.index : [0, 0],
-      toIndex: b.toCity ? toPick.index : [0, 0],
-      fromRange: b.fromCity ? fromPick.range : [PROVINCE_NAMES, TREE[0].cities],
-      toRange: b.toCity ? toPick.range : [PROVINCE_NAMES, TREE[0].cities]
+      senderName: sender.name || '寄件人信息',
+      receiverName: receiver.name || '收件人信息',
+      senderPhone: maskPhone(sender.phone),
+      receiverPhone: maskPhone(receiver.phone),
+      senderLine: lineOf(sender),
+      receiverLine: lineOf(receiver)
     })
   },
-  onColumn(e) {
-    const role = e.currentTarget.dataset.role
-    const { column, value } = e.detail
-    if (column !== 0) return
-    this.setData({
-      [role + 'Range']: rangeFor(value),
-      [role + 'Index']: [value, 0]
-    })
+  openBook(e) {
+    const who = e.currentTarget.dataset.who
+    requireLoginPage()
+      .then(() => wx.navigateTo({ url: '/pages/me/addresses?pick=' + who + '&title=地址簿' }))
+      .catch(() => {})
   },
-  onPick(e) {
-    const role = e.currentTarget.dataset.role
-    const [pi, ci] = e.detail.value || [0, 0]
-    const city = cityFromIndex(pi, ci)
-    if (!city) return
+  editWho() {
     const b = getBook()
-    const other = role === 'from' ? b.toCity : b.fromCity
-    if (samePlace(other, city)) {
-      wx.showToast({ title: '出发与到达不能相同', icon: 'none' })
-      this.sync()
+    if (!b.fromCity || !b.toCity) {
+      wx.showToast({ title: '请先从地址簿选择寄收地址', icon: 'none' })
       return
     }
-    if (role === 'from') {
-      b.fromCity = city
-      if (b.sender) {
-        b.sender.province = city.province
-        b.sender.city = city.name
-      }
-    } else {
-      b.toCity = city
-      if (b.receiver) {
-        b.receiver.province = city.province
-        b.receiver.city = city.name
-      }
-    }
-    saveBook()
-    this.sync()
-    logOp('city_pick', { role, code: city.code, name: city.name, province: city.province, source: 'home' })
-  },
-  swap() {
-    const b = getBook()
-    if (!b.fromCity && !b.toCity) return
-    const tmp = b.fromCity
-    b.fromCity = b.toCity
-    b.toCity = tmp
-    if (b.sender && b.fromCity) {
-      b.sender.province = b.fromCity.province
-      b.sender.city = b.fromCity.name
-    }
-    if (b.receiver && b.toCity) {
-      b.receiver.province = b.toCity.province
-      b.receiver.city = b.toCity.name
-    }
-    saveBook()
-    this.sync()
-    logOp('city_swap', {
-      from: cityLabel(b.fromCity),
-      to: cityLabel(b.toCity)
-    })
+    wx.navigateTo({ url: '/pages/book/addresses' })
   },
   syncResume() {
     const draft = draftResume()
@@ -120,8 +106,12 @@ Page({
   },
   goBook() {
     const b = getBook()
+    if (!b.sender || !b.sender.name || !b.receiver || !b.receiver.name) {
+      wx.showToast({ title: '请先选择寄收地址', icon: 'none' })
+      return
+    }
     if (!b.fromCity || !b.toCity) {
-      wx.showToast({ title: '请先选择出发和到达城市', icon: 'none' })
+      wx.showToast({ title: '地址里缺少可识别的城市', icon: 'none' })
       return
     }
     if (samePlace(b.fromCity, b.toCity)) {

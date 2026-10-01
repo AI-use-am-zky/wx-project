@@ -1,35 +1,66 @@
-<view class="safe">
-  <view wx:if="{{needLogin}}" class="card login-card">
-    <view class="h2">登录后查看订单</view>
-    <view class="sub mt-8">下单、取件和补差都会出现在这里。</view>
-    <view class="btn" bindtap="doLogin">登录</view>
+<view class="top" style="padding-top: {{statusBarHeight}}px;">
+  <view class="search">
+    <text class="search-ico">搜</text>
+    <input
+      class="search-input"
+      placeholder="运单号或订单号"
+      placeholder-class="search-ph"
+      confirm-type="search"
+      value="{{keyword}}"
+      bindinput="onSearch"
+    />
   </view>
-  <block wx:else>
-    <scroll-view class="tabs" scroll-x>
-      <view
-        wx:for="{{tabs}}"
-        wx:key="key"
-        class="tab {{tab===item.key?'on':''}}"
-        data-tab="{{item.key}}"
-        bindtap="switchTab"
-      >{{item.label}}</view>
-    </scroll-view>
-    <view wx:if="{{!list.length}}" class="empty card">该分类暂无订单</view>
-    <view class="card order" wx:for="{{list}}" wx:key="id" bindtap="open" data-id="{{item.id}}">
-      <view class="avatar ph" wx:if="{{!item.cover}}">宠</view>
-      <image wx:else class="avatar" src="{{item.cover}}" mode="aspectFill" />
-      <view class="meta">
-        <view class="top">
-          <view class="pet">{{item.title}}</view>
-          <view class="st {{item.statusClass}}">{{item.statusText}}</view>
-        </view>
-        <view class="path">{{item.path}}</view>
-        <view class="bot">
-          <text class="faint">{{item.subline}}</text>
-          <text class="price">¥{{item.paidYuan}}</text>
-        </view>
-      </view>
+  <scroll-view class="tabs" scroll-x>
+    <view class="tab-row">
+    <view class="tab {{tab==='sent'?'on':''}}" data-tab="sent" bindtap="switchTab">
+      我寄的<text wx:if="{{sentCount}}" class="count"> {{sentCount}}</text>
     </view>
-  </block>
+    <view class="tab {{tab==='recv'?'on':''}}" data-tab="recv" bindtap="switchTab">我收的</view>
+    <view class="tab {{tab==='star'?'on':''}}" data-tab="star" bindtap="switchTab">关注</view>
+    <view class="tab {{tab==='pay'?'on':''}}" data-tab="pay" bindtap="switchTab">
+      待支付<text wx:if="{{payCount}}" class="count"> {{payCount}}</text>
+    </view>
+    <view class="tab {{extra?'on':''}}" bindtap="openFilter">筛选</view>
+    </view>
+  </scroll-view>
+</view>
+<view class="top-space" style="height: {{topHeight}}px;"></view>
+
+<view wx:if="{{needLogin}}" class="empty-box">
+  <view class="empty-title">登录后查看运单</view>
+  <view class="empty-sub">下单、取件和补差都会出现在这里。</view>
+  <view class="login-btn" bindtap="doLogin">登录</view>
 </view>
 
+<block wx:else>
+  <view wx:if="{{!list.length}}" class="empty-box">
+    <view class="empty-title">{{emptyText}}</view>
+  </view>
+  <view class="bill" wx:for="{{list}}" wx:key="id">
+    <view class="bill-no" data-id="{{item.id}}" bindtap="open">
+      <text>{{item.waybill}}</text>
+      <text class="copy" wx:if="{{item.sfWaybillNo}}" catchtap="copyNo" data-no="{{item.sfWaybillNo}}">复制</text>
+    </view>
+    <view class="route" data-id="{{item.id}}" bindtap="open">
+      <view class="city-col">
+        <view class="place">{{item.fromCity}}</view>
+        <view class="when">{{item.when}}</view>
+      </view>
+      <view class="arrow">→</view>
+      <view class="city-col right">
+        <view class="place">{{item.toCity}}</view>
+        <view class="when">{{item.who}}</view>
+      </view>
+      <image wx:if="{{item.cover}}" class="face" src="{{item.cover}}" mode="aspectFill" />
+      <view wx:else class="face face-ph">宠</view>
+      <view class="status {{item.statusTone}}">{{item.statusText}}</view>
+    </view>
+    <view class="ops">
+      <view class="op" catchtap="again" data-id="{{item.id}}">再寄一单</view>
+      <view class="op" catchtap="open" data-id="{{item.id}}">查看物流</view>
+      <view class="op" wx:if="{{item.status!=='signed'}}" catchtap="notify" data-phone="{{item.receiverPhone}}">通知收件人</view>
+      <view class="op" catchtap="open" data-id="{{item.id}}">电子存根</view>
+    </view>
+  </view>
+  <view class="list-end" wx:if="{{list.length}}">已经到底了</view>
+</block>
