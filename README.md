@@ -6,6 +6,35 @@
 
 ---
 
+## Git 排除项（不进仓库）
+
+规则文件：仓库根目录 [`.gitignore`](.gitignore)。下列路径**不会被 git 跟踪/提交**，换电脑需自行拷贝或重新生成。
+
+| 路径 | 原因 | 新电脑怎么处理 |
+| --- | --- | --- |
+| `server/.env` | 含顺丰/微信等密钥 | 从旧机拷贝，或 `copy server\.env.example server\.env` 后填写 |
+| `server/data/` | 本地 SQLite（用户库、订单、演示库等） | 一般不迁；空跑会自动建库。要保留业务数据再整目录拷贝 |
+| `node_modules/` | 根目录依赖（若有） | 不拷贝 |
+| `server/node_modules/` | 后端 npm 依赖 | 在 `server` 下重新 `npm install` |
+| `project.private.config.json` | 微信开发者工具本机私有配置 | 不拷贝；工具会按本机重新生成 |
+
+当前 `.gitignore` 原文：
+
+```gitignore
+node_modules/
+server/node_modules/
+server/data/
+server/.env
+project.private.config.json
+```
+
+**会进仓库的配置模板：** `server/.env.example`（无真实密钥）。  
+**不要把填好密钥的 `.env` 强制 `git add -f` 提交。**
+
+另：`project.config.json` → `packOptions.ignore` 只影响**小程序打包**（排除 `server/`、`admin/`、`docs/` 等），与 git 无关。
+
+---
+
 ## 新电脑移植（第一次要做）
 
 ### 1. 安装环境
@@ -159,27 +188,113 @@ copy .env.example .env
 | 开发者工具不校域名 | `project.config.json` → `setting.urlCheck` | 微信开发者工具 |
 | 业务加价等运行时参数 | 管理端或库表 `app_settings` | `getSetting(...)` |
 
-### 切到顺丰生产（真实下单）
+**关于 `.env` 与 git：** `server/.env` 已在根目录 `.gitignore` 中忽略，**不会也不应提交**。仓库只保留无密钥的 `server/.env.example`。换电脑请自行拷贝 `.env` 或按下面清单重新填写。
 
-编辑 **`server/.env`** 后重启 `npm run dev` / 进程：
+---
+
+### 真实顺丰生产环境（必读）
+
+宠物主路径下单产品：**专享即日**（开放平台 `productCode=T11`，下单字段 `expressTypeId=303`）。  
+适配器：`server/src/adapters/sf-open.js`。生产网关：`https://bspgw.sf-express.com/std/service`。
+
+#### 1. 向顺丰侧先确认（配置前）
+
+在开放平台 / 销售侧确认下列能力已开通，否则会出现「能签名成功但业务拒单」：
+
+| 需求 | 说明 |
+| --- | --- |
+| 开放平台应用已审过并开通生产 | 有独立的**生产校验码**（与沙箱校验码不同） |
+| 顾客编码（partnerID） | 即 `SF_PARTNER_ID`，与校验码成对 |
+| 月结卡已绑定该顾客编码 | 且为**可发货**月结号（结算卡 ≠ 发货卡时需问清） |
+| 月结卡支持专享即日（303） | 未开通对应产品会下单失败 |
+| 活体/宠物寄递资质（若寄宠物） | 未开通时常见报错：「根据相关法规或我司有关限制条款，该物品禁止收寄」 |
+| 路由推送（可选） | 在开放平台登记回调 URL，才能自动更新揽收/在途/签收 |
+
+#### 2. `server/.env` 生产参数（必填）
 
 ```env
+# 关闭本地假数据，走开放平台
 SF_MOCK=false
+SF_QUOTE_FAIL=false
+
+# 生产环境（不要写 sbox）
 SF_ENV=prod
-SF_PARTNER_ID=你的顾客编码
-SF_CHECKWORD=生产校验码          # 与沙箱校验码不同，在开放平台应用详情分别查看
-SF_MONTHLY_CARD=真实月结卡号      # 寄方付通常必填；勿用 7551234567
+
+# 顾客编码（开放平台应用详情 / CustomerCode）
+SF_PARTNER_ID=
+
+# 生产校验码（开放平台「生产校验码」；沙箱码在 prod 会报 A1006 数字签名无效）
+SF_CHECKWORD=
+
+# 真实可发货月结卡号（寄方付 payMethod=1 必填；禁止再用沙箱演示卡 7551234567）
+SF_MONTHLY_CARD=
+
+# 宠物默认产品：专享即日
 SF_PREFERRED_PRODUCT_CODES=T11
 SF_EXPRESS_TYPE_ID=303
+
+# 顺丰→你方推送用的公网根（不是下单 API 地址）
 SF_PUBLIC_BASE_URL=https://你的公网HTTPS域名
 SF_WAYBILL_CALLBACK_PATH=/sfexpress/waybills/back
 ```
 
-同时在 [顺丰开放平台](https://open.sf-express.com) 登记推送地址：  
-`{SF_PUBLIC_BASE_URL}{SF_WAYBILL_CALLBACK_PATH}`。
+改完后**必须重启**后端（`npm run dev`），启动日志应类似：
 
-代码已接生产 API 网关（`bspgw.sf-express.com`），适配器：`server/src/adapters/sf-open.js`。  
-**生产会生成真实运单并可能计费，测完及时撤单。**
+```text
+[sf] mock=false env=prod partner=…… monthlyCard=set callback=https://……/sfexpress/waybills/back
+```
+
+#### 3. 参数对照与获取处
+
+| 环境变量 | 是否必填 | 从哪拿 | 作用 |
+| --- | --- | --- | --- |
+| `SF_MOCK` | 是 | 本地配置 | `false` 才访问顺丰 |
+| `SF_ENV` | 是 | 本地配置 | `prod` → 生产网关；`sbox` → 沙箱 |
+| `SF_PARTNER_ID` | 是 | 开放平台应用详情 | 请求头/表单 `partnerID` |
+| `SF_CHECKWORD` | 是 | 开放平台**生产**校验码 | 计算 `msgDigest` 签名 |
+| `SF_MONTHLY_CARD` | 是（寄方付） | 顺丰月结合同 / 丰桥绑定后的发货卡号 | 写入下单报文 `monthlyCard` |
+| `SF_EXPRESS_TYPE_ID` | 建议 | 产品表：专享即日=`303` | 下单产品编码 |
+| `SF_PREFERRED_PRODUCT_CODES` | 建议 | 产品推荐里的 `T11` | 估价时优先选该产品报价 |
+| `SF_PUBLIC_BASE_URL` | 推送时必填 | 你的 HTTPS 域名或稳定隧道 | 拼回调完整 URL |
+| `SF_WAYBILL_CALLBACK_PATH` | 建议保持默认 | 本地约定 | 默认 `/sfexpress/waybills/back` |
+
+开放平台登记的推送地址必须是：
+
+`{SF_PUBLIC_BASE_URL}{SF_WAYBILL_CALLBACK_PATH}`  
+例：`https://api.example.com/sfexpress/waybills/back`
+
+#### 4. 本系统会调哪些生产接口
+
+| 业务 | serviceCode | 触发时机 |
+| --- | --- | --- |
+| 产品推荐 / 估价 | `EXP_RECE_PSDS_PRODUCT_RECOMMEND` | `POST /quotes` |
+| 下订单 | `EXP_RECE_CREATE_ORDER` | 支付成功 / 管理端「重试顺丰」 |
+| 取消订单 | `EXP_RECE_UPDATE_ORDER` | 小程序「申请取消」（已有运单且未揽收） |
+| 路由查询 | `EXP_RECE_SEARCH_ROUTES` | 按需 |
+| 运单/路由推送 | 顺丰 → 你方回调 | 需公网 URL |
+
+下单托寄物当前按 **活体动物 + 品种** 组装；账号若无活体资质会被拒。
+
+#### 5. 生产联调步骤
+
+1. 填好上表 → 重启 `npm run dev`，确认日志 `env=prod monthlyCard=set`  
+2. （可选）`POST /debug/sf/product-recommend` 看是否返回产品列表且平台码 `A1000`  
+3. 小程序走完整下单 + 模拟支付（`PAY_MOCK` 仍可为 `true`，只测顺丰）  
+4. 成功：订单 `booked` 且有 `sfWaybillNo`；失败：看管理端 `rawSfError` 或日志 `[order.sf_failed]` 后的顺丰原文  
+5. 失败单可在 http://127.0.0.1:8787/admin/ 点 **「重试顺丰」**，不必重复付款  
+6. **测完用小程序「申请取消」撤单**（有运单时会调顺丰取消接口）
+
+#### 6. 常见生产报错
+
+| 顺丰原文 / 现象 | 常见原因 |
+| --- | --- |
+| `A1006` 数字签名无效 | 用了沙箱校验码，或 `SF_ENV` 与校验码不匹配 |
+| 传入了不可发货的月结卡号 | 月结未绑定顾客编码 / 非发货卡 / 未开通开放平台发货 |
+| 该物品禁止收寄 | 无活体资质，或专享即日不收该托寄物 |
+| 收方地址不可达 | 地址不详或该产品不可达此线路 |
+| 小程序只显示「承运接口异常」 | 统一文案；真实原因在订单 `sf_error` / 管理端 / 服务日志 |
+
+> **警告：** 生产会生成真实运单并可能计费；勿用沙箱演示月结 `7551234567` 打生产。
 
 ### 切到真实微信登录 + 支付
 
