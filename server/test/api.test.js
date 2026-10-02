@@ -3,9 +3,10 @@ import assert from 'node:assert/strict'
 import { config } from '../src/config.js'
 import { createApp } from '../src/app.js'
 
-// 单测强制 mock，避免依赖真实微信密钥
+// 单测强制 mock，避免依赖真实微信密钥 / 顺丰生产接口
 config.wxMockLogin = true
 config.payMock = true
+config.sfMock = true
 
 
 function listen(app) {

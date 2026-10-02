@@ -26,13 +26,21 @@ Page({
     clearMediaPick()
     requireLoginPage().then(() => {
       const b = getBook()
+      const sender = b.sender || {}
+      const agency = {
+        name: (b.agency && b.agency.name) || sender.name || '',
+        phone: (b.agency && b.agency.phone) || sender.phone || '',
+        petName: (b.agency && b.agency.petName) || b.petName || b.breed || ''
+      }
+      b.agency = agency
+      saveBook()
       this.setData({
         crateMode: b.crateMode || 'own',
         quarantineMode: b.quarantineMode || 'self',
         petPhotos: b.petPhotoPreviews && b.petPhotoPreviews.length ? b.petPhotoPreviews : (b.petPhotos || []),
         cratePhotos: b.cratePhotoPreviews && b.cratePhotoPreviews.length ? b.cratePhotoPreviews : (b.cratePhotos || []),
         quarantinePhotos: b.quarantinePhotoPreviews && b.quarantinePhotoPreviews.length ? b.quarantinePhotoPreviews : (b.quarantinePhotos || []),
-        agency: b.agency || { name: '', phone: '', petName: b.petName || '' }
+        agency
       })
       setBookStep('fulfill')
     })
@@ -142,7 +150,12 @@ Page({
     if (b.crateMode !== 'buy' && !(b.cratePhotos || []).length && !(b.cratePhotoPreviews || []).length) {
       return wx.showToast({ title: '请上传箱照', icon: 'none' })
     }
-    if (b.quarantineMode !== 'agency' && !(b.quarantinePhotos || []).length && !(b.quarantinePhotoPreviews || []).length) {
+    if (b.quarantineMode === 'agency') {
+      const a = b.agency || {}
+      if (!a.name || !a.phone || !a.petName) {
+        return wx.showToast({ title: '请填写代办检疫办理人信息', icon: 'none' })
+      }
+    } else if (!(b.quarantinePhotos || []).length && !(b.quarantinePhotoPreviews || []).length) {
       return wx.showToast({ title: '请上传检疫证明', icon: 'none' })
     }
     if (!(b.petPhotos || []).length && (b.petPhotoPreviews || []).length) {

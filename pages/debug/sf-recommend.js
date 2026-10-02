@@ -22,14 +22,14 @@ Page({
   data: {
     loading: false,
     resultText:
-      '将请求顺丰【生产】环境。请先在 server/.env 填：SF_ENV=prod、生产校验码、真实月结卡，并重启服务。'
+      '将请求服务端当前顺丰环境（.env 的 SF_ENV）。沙箱：sbox + 沙箱校验码 + 月结 7551234567；生产：prod + 生产校验码 + 真实月结。'
   },
   onLoad() {
     this._body = DEFAULT_BODY
   },
   run() {
     if (this.data.loading) return
-    this.setData({ loading: true, resultText: '正在请求生产环境…' })
+    this.setData({ loading: true, resultText: '正在请求顺丰…' })
     request({
       url: '/debug/sf/product-recommend',
       method: 'POST',

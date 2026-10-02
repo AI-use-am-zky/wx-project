@@ -9,10 +9,12 @@ export function javaUrlEncode(str) {
     .replace(/%[0-9a-f]{2}/gi, (m) => m.toUpperCase())
 }
 
-/** msgDigest = Base64(MD5(URLEncode(msgData + timestamp + checkword))) */
+/** msgDigest = Base64(MD5(msgData + timestamp + checkword))，当前开放平台不要求先 URLEncode */
 export function signMsgDigest(msgData, timestamp, checkWord) {
-  const encoded = javaUrlEncode(String(msgData) + String(timestamp) + String(checkWord))
-  return crypto.createHash('md5').update(encoded, 'utf8').digest('base64')
+  return crypto
+    .createHash('md5')
+    .update(String(msgData) + String(timestamp) + String(checkWord), 'utf8')
+    .digest('base64')
 }
 
 const ENV_URLS = {
@@ -114,12 +116,89 @@ export function buildProductRecommendMsgData(input, opts = {}) {
   return msg
 }
 
+export function buildCreateOrderMsgData(input, opts = {}) {
+  const sender = input.sender || {}
+  const receiver = input.receiver || {}
+  const species = input.species || '宠物'
+  const breed = input.breed || ''
+  const cargoName = [`活体动物`, species, breed].filter(Boolean).join('-').slice(0, 60)
+  const weight = Number(input.weightKg) || 1
+  const expressTypeId = Number(
+    input.expressTypeId != null ? input.expressTypeId : opts.expressTypeId != null ? opts.expressTypeId : 303
+  )
+  const orderId = String(input.orderId || `PA-${Date.now()}`)
+  const msg = {
+    language: 'zh-CN',
+    orderId,
+    cargoDetails: [
+      {
+        name: cargoName,
+        count: 1,
+        unit: '只',
+        weight
+      }
+    ],
+    cargoDesc: '活体动物',
+    contactInfoList: [
+      {
+        contactType: 1,
+        contact: sender.name,
+        mobile: sender.phone,
+        country: 'CN',
+        province: sender.province,
+        city: sender.city,
+        county: sender.district || undefined,
+        address: fullAddress(sender)
+      },
+      {
+        contactType: 2,
+        contact: receiver.name,
+        mobile: receiver.phone,
+        country: 'CN',
+        province: receiver.province,
+        city: receiver.city,
+        county: receiver.district || undefined,
+        address: fullAddress(receiver)
+      }
+    ],
+    expressTypeId,
+    payMethod: Number(opts.payMethod || 1),
+    parcelQty: 1,
+    totalWeight: weight,
+    isOneselfPickup: 0
+  }
+  if (opts.monthlyCard) msg.monthlyCard = String(opts.monthlyCard)
+  if (input.pickupDate) msg.sendStartTm = fmtSendTime(input.pickupDate)
+  const declareYuan =
+    input.declaredValueCents != null ? Math.round(Number(input.declaredValueCents) / 100) : 0
+  if (declareYuan > 0) {
+    msg.serviceList = [{ name: 'INSURE', value: String(declareYuan) }]
+  }
+  return msg
+}
+
+export function extractWaybillNo(msgData) {
+  const list = (msgData && msgData.waybillNoInfoList) || []
+  const mother = list.find((w) => String(w.waybillType) === '1') || list[0]
+  return (mother && mother.waybillNo) || (msgData && msgData.waybillNo) || null
+}
+
+/** 路由 opCode → 本系统订单状态 */
+export function statusFromSfOpCode(opCode) {
+  const code = String(opCode || '')
+  if (code === '80' || code === '8000') return 'signed'
+  if (code === '50' || code === '54') return 'collected'
+  if (['30', '31', '33', '44', '204', '130', '123'].includes(code)) return 'in_transit'
+  return null
+}
+
 export function createSfOpenClient({
   partnerId,
   checkWord,
   env = 'sbox',
   monthlyCard = '',
   preferredProductCodes = [],
+  expressTypeId = 303,
   timeoutMs = 12000
 } = {}) {
   if (!partnerId || !checkWord) {
@@ -218,6 +297,52 @@ export function createSfOpenClient({
               paymentTerms: '1'
             })
       return call('EXP_RECE_PSDS_PRODUCT_RECOMMEND', msg)
+    },
+    async createOrder(input) {
+      const msg = buildCreateOrderMsgData(input, {
+        monthlyCard: input.monthlyCard || monthlyCard,
+        expressTypeId: input.expressTypeId != null ? input.expressTypeId : expressTypeId,
+        payMethod: input.payMethod || 1
+      })
+      const result = await call('EXP_RECE_CREATE_ORDER', msg)
+      const waybillNo = extractWaybillNo(result.msgData)
+      if (!waybillNo) {
+        const err = new Error('顺丰未返回运单号')
+        err.code = 'SF_NO_WAYBILL'
+        err.raw = result
+        throw err
+      }
+      return {
+        waybillNo,
+        sfOrderId: msg.orderId,
+        originCode: result.msgData && result.msgData.originCode,
+        destCode: result.msgData && result.msgData.destCode,
+        raw: result
+      }
+    },
+    async cancelOrder(sfOrderId) {
+      const result = await call('EXP_RECE_UPDATE_ORDER', {
+        orderId: String(sfOrderId),
+        dealType: 2
+      })
+      return { ok: true, raw: result }
+    },
+    async queryRoutes(waybillNo) {
+      const result = await call('EXP_RECE_SEARCH_ROUTES', {
+        language: '0',
+        trackingType: '1',
+        methodType: '1',
+        trackingNumber: [String(waybillNo)]
+      })
+      const resps = (result.msgData && result.msgData.routeResps) || []
+      const routes = (resps[0] && resps[0].routes) || []
+      return routes.map((r) => ({
+        time: r.acceptTime,
+        text: r.remark || r.opCode,
+        code: r.opCode,
+        address: r.acceptAddress,
+        waybillNo: (resps[0] && resps[0].mailNo) || waybillNo
+      }))
     }
   }
 }
@@ -230,6 +355,7 @@ export function createSf({
   env,
   monthlyCard,
   preferredProductCodes,
+  expressTypeId,
   mockFactory
 } = {}) {
   const { createMockSf } = mockFactory
@@ -244,7 +370,8 @@ export function createSf({
     checkWord,
     env,
     monthlyCard,
-    preferredProductCodes
+    preferredProductCodes,
+    expressTypeId
   })
   const preferred = preferredProductCodes || []
 
@@ -285,6 +412,22 @@ export function createSf({
         err.raw = e.raw
         throw err
       }
+    },
+    async createOrder(input) {
+      const productExpress =
+        input.expressTypeId != null
+          ? input.expressTypeId
+          : input.quoteProduct && (input.quoteProduct.expressType || input.quoteProduct.expressTypeId)
+      return client.createOrder({
+        ...input,
+        expressTypeId: productExpress != null ? productExpress : expressTypeId
+      })
+    },
+    async cancelOrder(sfOrderId) {
+      return client.cancelOrder(sfOrderId)
+    },
+    async queryRoutes(waybillNo) {
+      return client.queryRoutes(waybillNo)
     }
   }
 }

@@ -35,7 +35,8 @@ import {
   cancelOrder,
   applyReweigh,
   paySurcharge,
-  issueInvoice
+  issueInvoice,
+  applySfWaybillPush
 } from './service.js'
 import { STATUS } from './domain/order-machine.js'
 import {
@@ -58,20 +59,6 @@ const storage = multer.diskStorage({
   filename: (_req, file, cb) => cb(null, uuid() + path.extname(file.originalname || '.jpg'))
 })
 const upload = multer({ storage, limits: { fileSize: 8 * 1024 * 1024 } })
-
-const sf = createSf({
-  mock: config.sfMock,
-  quoteFail: config.sfQuoteFail,
-  partnerId: config.sfPartnerId,
-  checkWord: config.sfCheckWord,
-  env: config.sfEnv,
-  monthlyCard: config.sfMonthlyCard,
-  preferredProductCodes: config.sfPreferredProductCodes,
-  mockFactory: { createMockSf }
-})
-const wechat = createWechat()
-const notify = createNotify({ webhookUrl: config.adminNotifyWebhook })
-const invoiceAdapter = createInvoiceAdapter()
 
 function auth(req, res, next) {
   const h = req.headers.authorization || ''
@@ -112,10 +99,31 @@ function publicUser(user) {
 }
 
 export function createApp() {
+  const sf = createSf({
+    mock: config.sfMock,
+    quoteFail: config.sfQuoteFail,
+    partnerId: config.sfPartnerId,
+    checkWord: config.sfCheckWord,
+    env: config.sfEnv,
+    monthlyCard: config.sfMonthlyCard,
+    preferredProductCodes: config.sfPreferredProductCodes,
+    expressTypeId: config.sfExpressTypeId,
+    mockFactory: { createMockSf }
+  })
+  const wechat = createWechat()
+  const notify = createNotify({ webhookUrl: config.adminNotifyWebhook })
+  const invoiceAdapter = createInvoiceAdapter()
+
   const app = express()
   app.use(cors())
   // 支付回调必须先读原始 XML，不能走 json parser
   app.use('/pay/wx-notify', express.raw({ type: () => true, limit: '1mb' }))
+  // 顺丰推送可能是 form / xml / json
+  app.use(
+    config.sfWaybillCallbackPath,
+    express.text({ type: ['application/xml', 'text/xml', 'text/plain'], limit: '2mb' })
+  )
+  app.use(express.urlencoded({ extended: true, limit: '2mb' }))
   app.use(express.json({ limit: '8mb' }))
   app.use('/uploads', express.static(uploadDir))
   const adminDir = path.join(__dirname, '../../admin')
@@ -271,7 +279,8 @@ export function createApp() {
         partnerId: config.sfPartnerId,
         checkWord: config.sfCheckWord,
         env: config.sfEnv,
-        monthlyCard: config.sfMonthlyCard || undefined
+        monthlyCard: config.sfMonthlyCard || undefined,
+        expressTypeId: config.sfExpressTypeId
       })
       const result = await client.productRecommend(req.body || {})
       ok(res, {
@@ -294,6 +303,95 @@ export function createApp() {
     } catch (e) {
       fail(res, 502, e.message || '顺丰调用失败', { code: e.code, raw: e.raw })
     }
+  })
+
+  /** 开发联调：真实下单（会生成真实运单，慎用） */
+  app.post('/debug/sf/create-order', async (req, res) => {
+    if (config.sfMock) {
+      return fail(res, 400, '当前 SF_MOCK=true，请在 .env 设为 false 后重启')
+    }
+    if (!config.sfPartnerId || !config.sfCheckWord) {
+      return fail(res, 400, '请填写 SF_PARTNER_ID / SF_CHECKWORD')
+    }
+    try {
+      const created = await sf.createOrder(req.body || {})
+      ok(res, {
+        env: config.sfEnv,
+        partnerId: config.sfPartnerId,
+        waybillNo: created.waybillNo,
+        sfOrderId: created.sfOrderId,
+        callbackUrl: config.sfPublicBaseUrl
+          ? `${config.sfPublicBaseUrl}${config.sfWaybillCallbackPath}`
+          : null,
+        raw: created.raw
+      })
+    } catch (e) {
+      fail(res, 502, e.message || '顺丰下单失败', { code: e.code, raw: e.raw })
+    }
+  })
+
+  /**
+   * 顺丰运单/路由推送回调（你在开放平台登记的地址）。
+   * 例：https://xxx.trycloudflare.com/sfexpress/waybills/back
+   * 注意：这是「顺丰 → 你的服务」，不是你去调顺丰下单的 API。
+   */
+  app.post(config.sfWaybillCallbackPath, (req, res) => {
+    try {
+      let payload = req.body
+      if (typeof payload === 'string' && payload.trim()) {
+        const asJson = (() => {
+          try {
+            return JSON.parse(payload)
+          } catch {
+            return null
+          }
+        })()
+        if (asJson) payload = asJson
+        else {
+          const mailno = (payload.match(/mailno=['"]([^'"]+)/i) || [])[1]
+          const orderid = (payload.match(/orderid=['"]([^'"]+)/i) || [])[1]
+          const opCode = (payload.match(/opCode=['"]([^'"]+)/i) || [])[1]
+          const remark = (payload.match(/remark=['"]([^'"]+)/i) || [])[1]
+          const acceptTime = (payload.match(/acceptTime=['"]([^'"]+)/i) || [])[1]
+          payload = { mailno, orderId: orderid, opCode, remark, acceptTime, rawXml: payload }
+        }
+      }
+      if (payload && payload.content && typeof payload.content === 'string') {
+        try {
+          payload = { ...payload, ...JSON.parse(payload.content) }
+        } catch {
+          /* keep */
+        }
+      }
+      const result = applySfWaybillPush(payload)
+      console.log('[sf/waybill-callback]', result)
+      // 兼容新旧推送应答
+      res.status(200).json({ success: true, return_code: '0000', return_msg: '成功', ...result })
+    } catch (e) {
+      console.error('[sf/waybill-callback]', e.message)
+      res.status(200).json({ success: false, return_code: '1000', return_msg: e.message || 'error' })
+    }
+  })
+
+  app.get('/debug/sf/config', (_req, res) => {
+    ok(res, {
+      mock: config.sfMock,
+      env: config.sfEnv,
+      partnerId: config.sfPartnerId || null,
+      checkwordSet: Boolean(config.sfCheckWord),
+      monthlyCardSet: Boolean(config.sfMonthlyCard),
+      expressTypeId: config.sfExpressTypeId,
+      preferredProductCodes: config.sfPreferredProductCodes,
+      apiEndpoint:
+        config.sfEnv === 'sbox'
+          ? 'https://sfapi-sbox.sf-express.com/std/service'
+          : 'https://bspgw.sf-express.com/std/service',
+      publicBaseUrl: config.sfPublicBaseUrl || null,
+      waybillCallbackUrl: config.sfPublicBaseUrl
+        ? `${config.sfPublicBaseUrl}${config.sfWaybillCallbackPath}`
+        : `http://127.0.0.1:${config.port}${config.sfWaybillCallbackPath}`,
+      note: 'SF_PUBLIC_BASE_URL 是顺丰推送回调的公网入口，不是下单 API'
+    })
   })
 
   app.post('/session/ops', (req, res) => {

@@ -7,6 +7,13 @@ app.listen(config.port, '0.0.0.0', async () => {
   console.log(`pet-air API http://127.0.0.1:${config.port}`)
   console.log(`pet-air LAN  http://0.0.0.0:${config.port} (真机请用电脑 WLAN IP)`)
   console.log(`admin http://127.0.0.1:${config.port}/admin/`)
+  console.log(
+    `[sf] mock=${config.sfMock} env=${config.sfEnv} partner=${config.sfPartnerId || '(empty)'} monthlyCard=${config.sfMonthlyCard ? 'set' : 'MISSING'} callback=${
+      config.sfPublicBaseUrl
+        ? config.sfPublicBaseUrl + config.sfWaybillCallbackPath
+        : '(set SF_PUBLIC_BASE_URL)'
+    }`
+  )
   const mock = config.wxMockLogin || !config.wxAppSecret
   console.log(`[wx] mockLogin=${mock} appId=${config.wxAppId || '(empty)'}`)
   if (!mock) {

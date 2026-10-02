@@ -25,6 +25,11 @@ export const config = {
   sfMonthlyCard: process.env.SF_MONTHLY_CARD || '',
   /** 逗号分隔，产品推荐里优先选用的 productCode */
   sfPreferredProductCodes: csv(process.env.SF_PREFERRED_PRODUCT_CODES),
+  /** 下单默认 expressTypeId（303=专享即日） */
+  sfExpressTypeId: Number(process.env.SF_EXPRESS_TYPE_ID || 303),
+  /** 公网根地址，供顺丰推送；非顺丰 API */
+  sfPublicBaseUrl: (process.env.SF_PUBLIC_BASE_URL || '').replace(/\/$/, ''),
+  sfWaybillCallbackPath: process.env.SF_WAYBILL_CALLBACK_PATH || '/sfexpress/waybills/back',
   wxAppId: process.env.WX_APP_ID || '',
   wxAppSecret: process.env.WX_APP_SECRET || '',
   wxMchId: process.env.WX_MCH_ID || '',

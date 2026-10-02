@@ -1,11 +1,14 @@
-const { getBook, saveBook, setBookStep } = require('../../utils/book')
+const { getBook, saveBook, setBookStep, quoteExpired } = require('../../utils/book')
 const { requireLoginPage } = require('../../utils/auth')
 const { findProvince, indexesFor, cityFromIndex, samePlace } = require('../../utils/regions')
 const { isPickingMedia } = require('../../utils/media-pick')
-const { yuan } = require('../../utils/request')
+const { request, yuan } = require('../../utils/request')
+const { goodsFilled, ensurePetFields } = require('../../utils/pet')
 
 const TIMES = ['今天两小时内', '今天 18:00 前', '明天 09:00-12:00', '明天 12:00-18:00']
 const PAYS = ['寄付现结', '到付']
+const CRATE_PRICE = { 'crate-s': 18000, 'crate-m': 28000, 'crate-l': 42000 }
+const QUARANTINE = 20000
 
 function measure() {
   let statusBarHeight = 20
@@ -46,6 +49,38 @@ function blank() {
   return { name: '', phone: '', province: '', city: '', district: '', detail: '' }
 }
 
+function pickupDateFromLabel(label) {
+  const d = new Date()
+  if (/明天/.test(String(label || ''))) d.setDate(d.getDate() + 1)
+  return d.toISOString().slice(0, 10)
+}
+
+function insureFeeCents(declaredValueCents) {
+  return Math.max(100, Math.round((Number(declaredValueCents) || 0) * 0.01))
+}
+
+function computePreviewCents(b) {
+  if (!b.quote || b.quote.sellFreightCents == null) return null
+  let total = Number(b.quote.sellFreightCents) || 0
+  if (b.crateMode === 'buy' && b.crateSkuId) total += CRATE_PRICE[b.crateSkuId] || 0
+  if (b.quarantineMode === 'agency') total += QUARANTINE
+  if (b.insure && Number(b.declaredValueCents) > 0) total += insureFeeCents(b.declaredValueCents)
+  return total
+}
+
+function canQuote(b) {
+  return Boolean(
+    b &&
+      b.sender &&
+      b.sender.name &&
+      b.receiver &&
+      b.receiver.name &&
+      b.fromCity &&
+      b.toCity &&
+      goodsFilled(b)
+  )
+}
+
 Page({
   data: {
     ...measure(),
@@ -66,12 +101,14 @@ Page({
     declaredYuan: '',
     fixedYuan: '500',
     remark: '',
-    totalText: '--'
+    totalText: '--',
+    quoting: false
   },
   onShow() {
     if (isPickingMedia()) return
     this.takePicked()
     this.sync()
+    this.maybeQuote()
   },
   takePicked() {
     const picked = wx.getStorageSync('addressPicked')
@@ -88,18 +125,27 @@ Page({
       const city = cityOf(addr)
       if (city) b.toCity = city
     }
+    b.quote = null
+    b.previewTotalCents = null
     saveBook()
   },
   sync() {
     const b = getBook()
+    ensurePetFields(b)
+    const preview = computePreviewCents(b)
+    if (preview != null) {
+      b.previewTotalCents = preview
+      saveBook()
+    }
     const sender = b.sender || blank()
     const receiver = b.receiver || blank()
-    const goods = [b.petName || b.breed || b.species, b.weightKg ? b.weightKg + 'kg' : ''].filter(Boolean).join('，')
-    const quote = b.quote
-    const cents = b.previewTotalCents != null ? b.previewTotalCents : (quote && quote.sellFreightCents)
+    const goods = [b.petName || b.breed || b.species, b.weightKg ? b.weightKg + 'kg' : '']
+      .filter(Boolean)
+      .join('，')
+    const cents = preview != null ? preview : b.previewTotalCents
     const total = cents != null ? yuan(cents) : '--'
-    const priced = cents != null ? '¥' + yuan(cents) : '待估价'
-    const etaPrice = (key) => (cents != null && this.data.etaKey === key ? priced : '待估价')
+    const priced = cents != null ? '¥' + yuan(cents) : this.data.quoting ? '估价中' : '待估价'
+    const etaPrice = (key) => (cents != null && this.data.etaKey === key ? priced : cents != null ? '¥' + yuan(cents) : priced)
     this.setData({
       sender,
       receiver,
@@ -108,9 +154,11 @@ Page({
       senderPhoneMask: maskPhone(sender.phone),
       receiverPhoneMask: maskPhone(receiver.phone),
       goodsText: goods || '请填写宠物和重量',
-      goodsReady: Boolean(b.species && b.weightKg),
+      goodsReady: goodsFilled(b),
       insureMode: b.insure ? (this.data.insureMode === 'fixed' ? 'fixed' : 'basic') : 'none',
-      declaredYuan: b.declaredValueCents ? String(Math.round(Number(b.declaredValueCents) / 100)) : this.data.declaredYuan,
+      declaredYuan: b.declaredValueCents
+        ? String(Math.round(Number(b.declaredValueCents) / 100))
+        : this.data.declaredYuan,
       remark: b.petNote || this.data.remark,
       totalText: total,
       etas: [
@@ -119,6 +167,55 @@ Page({
         { key: 'economy', name: '空运经济', eta: '航班较满时顺延', price: etaPrice('economy') }
       ]
     })
+  },
+  maybeQuote() {
+    const b = getBook()
+    ensurePetFields(b)
+    if (!canQuote(b)) return
+    if (b.quote && !quoteExpired(b)) {
+      this.sync()
+      return
+    }
+    this.refreshQuote()
+  },
+  refreshQuote() {
+    const b = getBook()
+    ensurePetFields(b)
+    if (!canQuote(b) || this._quoting) return Promise.resolve(null)
+    this._quoting = true
+    this.setData({ quoting: true, totalText: '...' })
+    b.pickupDate = pickupDateFromLabel(this.data.pickupTime)
+    saveBook()
+    return request({
+      url: '/quotes',
+      method: 'POST',
+      data: {
+        sender: b.sender,
+        receiver: b.receiver,
+        species: b.species,
+        breed: b.breed,
+        petName: b.petName,
+        petNote: b.petNote || '',
+        weightKg: Number(b.weightKg),
+        pickupDate: b.pickupDate
+      }
+    })
+      .then((q) => {
+        b.quote = q
+        b.previewTotalCents = computePreviewCents(b)
+        saveBook()
+        this._quoting = false
+        this.setData({ quoting: false })
+        this.sync()
+        return q
+      })
+      .catch((e) => {
+        this._quoting = false
+        this.setData({ quoting: false })
+        this.sync()
+        wx.showToast({ title: (e && e.message) || '估价失败', icon: 'none' })
+        return null
+      })
   },
   editWho() {
     const b = getBook()
@@ -145,8 +242,11 @@ Page({
     const from = b.fromCity
     b.fromCity = b.toCity
     b.toCity = from
+    b.quote = null
+    b.previewTotalCents = null
     saveBook()
     this.sync()
+    this.maybeQuote()
   },
   pointMode() {
     wx.showToast({ title: '当前只支持上门取件', icon: 'none' })
@@ -154,7 +254,14 @@ Page({
   pickTime() {
     wx.showActionSheet({
       itemList: TIMES,
-      success: (res) => this.setData({ pickupTime: TIMES[res.tapIndex] })
+      success: (res) => {
+        this.setData({ pickupTime: TIMES[res.tapIndex] })
+        const b = getBook()
+        b.quote = null
+        b.previewTotalCents = null
+        saveBook()
+        this.maybeQuote()
+      }
     })
   },
   editGoods() {
@@ -183,6 +290,7 @@ Page({
   },
   pickEta(e) {
     this.setData({ etaKey: e.currentTarget.dataset.key })
+    this.sync()
   },
   pickInsure(e) {
     const mode = e.currentTarget.dataset.mode
@@ -204,6 +312,7 @@ Page({
     b.declaredValueCents = Number(yuanValue) * 100
     saveBook()
     this.setData({ insureMode: 'fixed', fixedYuan: String(yuanValue), declaredYuan: String(yuanValue) })
+    this.sync()
   },
   onDeclared(e) {
     const value = String(e.detail.value || '').replace(/[^\d.]/g, '')
@@ -212,6 +321,7 @@ Page({
     b.declaredValueCents = Math.round(Number(value || 0) * 100)
     saveBook()
     this.setData({ declaredYuan: value, insureMode: 'basic' })
+    this.sync()
   },
   noop() {},
   pickCoupon() {
@@ -227,8 +337,18 @@ Page({
   showDetail() {
     const b = getBook()
     const lines = (b.quote && b.quote.lines) || []
+    const extras = []
+    if (b.crateMode === 'buy' && b.crateSkuId) {
+      extras.push('航空箱  ¥' + yuan(CRATE_PRICE[b.crateSkuId] || 0))
+    }
+    if (b.insure && Number(b.declaredValueCents) > 0) {
+      extras.push('保价  ¥' + yuan(insureFeeCents(b.declaredValueCents)))
+    }
     const body = lines.length
-      ? lines.map((item) => item.name + '  ¥' + yuan(item.cents)).join('\n')
+      ? lines
+          .map((item) => item.name + '  ¥' + yuan(item.cents))
+          .concat(extras)
+          .join('\n')
       : '填写寄收地址和宠物重量后，才会生成估价。'
     wx.showModal({ title: '费用明细', content: body, showCancel: false })
   },
@@ -236,6 +356,8 @@ Page({
     requireLoginPage()
       .then(() => {
         const b = getBook()
+        ensurePetFields(b)
+        saveBook()
         if (!b.sender || !b.sender.name || !b.receiver || !b.receiver.name) {
           wx.showToast({ title: '请先填写寄收地址', icon: 'none' })
           return
@@ -248,13 +370,25 @@ Page({
           wx.showToast({ title: '出发与到达不能相同', icon: 'none' })
           return
         }
-        if (!b.species || !b.weightKg) {
+        if (!goodsFilled(b)) {
           wx.showToast({ title: '请填写物品信息', icon: 'none' })
           this.editGoods()
           return
         }
-        setBookStep(b.quote ? 'quote-result' : 'pet-quote')
-        wx.navigateTo({ url: b.quote ? '/pages/book/quote-result' : '/pages/book/pet-quote' })
+        const goNext = () => {
+          setBookStep('fulfill')
+          wx.navigateTo({ url: '/pages/book/fulfill' })
+        }
+        if (b.quote && !quoteExpired(b)) {
+          goNext()
+          return
+        }
+        wx.showLoading({ title: '估价中' })
+        this.refreshQuote().then((q) => {
+          wx.hideLoading()
+          if (!q) return
+          goNext()
+        })
       })
       .catch(() => {})
   }

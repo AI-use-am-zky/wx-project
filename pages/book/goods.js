@@ -1,6 +1,7 @@
 const { requireLoginPage } = require('../../utils/auth')
 const { getBook, saveBook } = require('../../utils/book')
 const { request, yuan } = require('../../utils/request')
+const { resolvePetFromName } = require('../../utils/pet')
 
 const CRATE_IMAGE = {
   'crate-s': '/images/crate-s.jpg',
@@ -45,7 +46,7 @@ Page({
     const b = getBook()
     const weight = Number(b.weightKg) || 3
     this.setData({
-      petName: b.petName || '',
+      petName: b.petName || b.breed || '',
       weightKg: weight,
       weightText: weightText(weight),
       volumeOn: Boolean(b.volumeOn),
@@ -109,8 +110,11 @@ Page({
       wx.showToast({ title: '请填写预估重量', icon: 'none' })
       return
     }
+    const resolved = resolvePetFromName(d.petName)
     const b = getBook()
     b.petName = d.petName
+    b.species = resolved.species
+    b.breed = resolved.breed
     b.weightKg = String(d.weightKg)
     b.pieceCount = 1
     b.volumeOn = d.volumeOn
@@ -119,7 +123,9 @@ Page({
     b.volumeH = d.volumeH
     b.crateMode = d.crateSkuId ? 'buy' : 'own'
     b.crateSkuId = d.crateSkuId || ''
-    if (b.quote) b.quote = null
+    // 物品变更后重新估价
+    b.quote = null
+    b.previewTotalCents = null
     saveBook()
     wx.navigateBack()
   }

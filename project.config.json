@@ -3,26 +3,75 @@
   "libVersion": "3.5.5",
   "packOptions": {
     "ignore": [
-      { "value": "server", "type": "folder" },
-      { "value": "admin", "type": "folder" },
-      { "value": "docs", "type": "folder" },
-      { "value": "node_modules", "type": "folder" },
-      { "value": "2-design", "type": "folder" },
-      { "value": "README.md", "type": "file" },
-      { "value": "images/tab-home.svg", "type": "file" },
-      { "value": "images/tab-home-active.svg", "type": "file" },
-      { "value": "images/tab-me.svg", "type": "file" },
-      { "value": "images/tab-me-active.svg", "type": "file" },
-      { "value": "images/tab-order.svg", "type": "file" },
-      { "value": "images/tab-order-active.svg", "type": "file" },
-      { "value": "images/tab-send.svg", "type": "file" },
-      { "value": "images/tab-send-active.svg", "type": "file" },
-      { "value": "images/tab-track.svg", "type": "file" },
-      { "value": "images/tab-track-active.svg", "type": "file" }
+      {
+        "value": "server",
+        "type": "folder"
+      },
+      {
+        "value": "admin",
+        "type": "folder"
+      },
+      {
+        "value": "docs",
+        "type": "folder"
+      },
+      {
+        "value": "node_modules",
+        "type": "folder"
+      },
+      {
+        "value": "2-design",
+        "type": "folder"
+      },
+      {
+        "value": "README.md",
+        "type": "file"
+      },
+      {
+        "value": "images/tab-home.svg",
+        "type": "file"
+      },
+      {
+        "value": "images/tab-home-active.svg",
+        "type": "file"
+      },
+      {
+        "value": "images/tab-me.svg",
+        "type": "file"
+      },
+      {
+        "value": "images/tab-me-active.svg",
+        "type": "file"
+      },
+      {
+        "value": "images/tab-order.svg",
+        "type": "file"
+      },
+      {
+        "value": "images/tab-order-active.svg",
+        "type": "file"
+      },
+      {
+        "value": "images/tab-send.svg",
+        "type": "file"
+      },
+      {
+        "value": "images/tab-send-active.svg",
+        "type": "file"
+      },
+      {
+        "value": "images/tab-track.svg",
+        "type": "file"
+      },
+      {
+        "value": "images/tab-track-active.svg",
+        "type": "file"
+      }
     ],
     "include": []
   },
   "setting": {
+    "urlCheck": false,
     "coverView": true,
     "es6": true,
     "postcss": true,

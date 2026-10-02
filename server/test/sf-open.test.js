@@ -5,7 +5,10 @@ import {
   signMsgDigest,
   pickProduct,
   feeToCents,
-  buildProductRecommendMsgData
+  buildProductRecommendMsgData,
+  buildCreateOrderMsgData,
+  extractWaybillNo,
+  statusFromSfOpCode
 } from '../src/adapters/sf-open.js'
 
 test('javaUrlEncode uppercases percent escapes like Java URLEncoder', () => {
@@ -13,12 +16,12 @@ test('javaUrlEncode uppercases percent escapes like Java URLEncoder', () => {
   assert.match(javaUrlEncode('中'), /^%[0-9A-F]{2}/)
 })
 
-test('signMsgDigest matches Base64(MD5(URLEncode(msg+ts+check)))', () => {
+test('signMsgDigest is Base64(MD5(msg+ts+check)) without URLEncode', () => {
   const msgData = '{"language":"zh-CN","orderId":"QIAO-20200618-004"}'
   const timestamp = '12312334453453'
   const checkWord = 'fjcg5PGKaNpPSHFAZ4QsCOkV71R3zVci'
   const digest = signMsgDigest(msgData, timestamp, checkWord)
-  assert.equal(digest, 'IIKJtuLVzoFTu4kHI8M8vA==')
+  assert.equal(digest, 'OwYXm3XG9fjHK7A+/t7Ckw==')
 })
 
 test('pickProduct prefers T11 专享即日 then configured then pet/air', () => {
@@ -74,4 +77,63 @@ test('buildProductRecommendMsgData fills required address fields', () => {
   assert.equal(msg.monthlyCard, '7551234567')
   assert.ok(msg.srcAddress.includes('南山区'))
   assert.ok(msg.commodityNameList[0].includes('活体动物'))
+})
+
+test('buildCreateOrderMsgData builds BSP create-order payload', () => {
+  const msg = buildCreateOrderMsgData(
+    {
+      orderId: 'ord-test-1',
+      sender: {
+        name: '张三',
+        phone: '13800000001',
+        province: '广东省',
+        city: '深圳市',
+        district: '南山区',
+        detail: '科技园一路1号'
+      },
+      receiver: {
+        name: '李四',
+        phone: '13900000002',
+        province: '北京市',
+        city: '北京市',
+        district: '朝阳区',
+        detail: '望京街2号'
+      },
+      weightKg: 8,
+      species: 'dog',
+      breed: '金毛',
+      pickupDate: '2026-10-02',
+      declaredValueCents: 300000
+    },
+    { monthlyCard: '7551234567', expressTypeId: 303 }
+  )
+  assert.equal(msg.orderId, 'ord-test-1')
+  assert.equal(msg.expressTypeId, 303)
+  assert.equal(msg.payMethod, 1)
+  assert.equal(msg.monthlyCard, '7551234567')
+  assert.equal(msg.contactInfoList.length, 2)
+  assert.equal(msg.contactInfoList[0].contactType, 1)
+  assert.equal(msg.contactInfoList[1].contactType, 2)
+  assert.equal(msg.serviceList[0].name, 'INSURE')
+  assert.equal(msg.serviceList[0].value, '3000')
+  assert.ok(msg.cargoDetails[0].name.includes('活体动物'))
+})
+
+test('extractWaybillNo prefers mother waybill', () => {
+  assert.equal(
+    extractWaybillNo({
+      waybillNoInfoList: [
+        { waybillType: 2, waybillNo: 'SF-CHILD' },
+        { waybillType: 1, waybillNo: 'SF-MOTHER' }
+      ]
+    }),
+    'SF-MOTHER'
+  )
+})
+
+test('statusFromSfOpCode maps collect/transit/sign', () => {
+  assert.equal(statusFromSfOpCode('50'), 'collected')
+  assert.equal(statusFromSfOpCode('44'), 'in_transit')
+  assert.equal(statusFromSfOpCode('80'), 'signed')
+  assert.equal(statusFromSfOpCode('999'), null)
 })

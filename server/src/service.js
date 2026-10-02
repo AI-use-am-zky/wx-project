@@ -12,6 +12,7 @@ import { config } from './config.js'
 import { priceFromSfCost, priceFromRateCard, surchargeFromReweigh, refundAmount } from './domain/pricing.js'
 import { STATUS, isCollectedOrAfter, canIssueInvoice, transportStatusAfterSurcharge } from './domain/order-machine.js'
 import { validAddress, requireFields, BREEDS, ADDON_QUARANTINE_CENTS, insureFeeCents } from './http.js'
+import { statusFromSfOpCode } from './adapters/sf-open.js'
 
 function udbOfOrder(orderId) {
   const hit = dbForResource('order', orderId)
@@ -82,6 +83,7 @@ export async function createQuote({ userId, sender, receiver, species, breed, we
   }
   const id = uuid()
   const expires = new Date(Date.now() + 25 * 60 * 1000).toISOString()
+  const product = rawSf && rawSf.product
   const payload = {
     sender,
     receiver,
@@ -90,7 +92,12 @@ export async function createQuote({ userId, sender, receiver, species, breed, we
     weightKg: kg,
     pickupDate,
     petName: petName || '',
-    petNote: petNote || ''
+    petNote: petNote || '',
+    // 宠物主路径固定专享即日（SF_EXPRESS_TYPE_ID，默认 303）
+    sfExpressTypeId: config.sfExpressTypeId,
+    quoteProductCode: (product && product.productCode) || null,
+    quoteProductName:
+      (product && (product.productDisplayName || product.productName)) || null
   }
   const udb = getUserDb(userId)
   udb.prepare(
@@ -311,13 +318,15 @@ export async function markPaidAndSubmitSf({ orderId, sf, notify }) {
   notify.send('order.paid', { orderId, summary: '新单已支付' })
   try {
     const created = await sf.createOrder({
+      orderId,
       sender: payload.sender,
       receiver: payload.receiver,
       species: payload.species,
       breed: payload.breed,
       weightKg: payload.weightKg,
       pickupDate: payload.pickupDate,
-      declaredValueCents: payload.declaredValueCents
+      declaredValueCents: payload.declaredValueCents,
+      expressTypeId: payload.sfExpressTypeId || config.sfExpressTypeId
     })
     udb.prepare(
       'UPDATE orders SET status = ?, sf_waybill_no = ?, sf_order_id = ?, sf_error = NULL, updated_at = ? WHERE id = ?'
@@ -452,6 +461,78 @@ export async function issueInvoice(order, invoiceAdapter) {
   )
   addEvent(order.id, 'invoice', result.mark || '发票已受理')
   return result
+}
+
+/** 按运单号或客户订单号定位本系统订单 */
+export function findOrderBySfRef({ waybillNo, orderId }) {
+  if (orderId) {
+    const o = getOrder(orderId)
+    if (o) return o
+  }
+  if (!waybillNo) return null
+  const ids = db.prepare(`SELECT id, user_id FROM resource_index WHERE kind = 'order'`).all()
+  for (const row of ids) {
+    const raw = getUserDb(row.user_id)
+      .prepare('SELECT id FROM orders WHERE sf_waybill_no = ? OR sf_order_id = ? LIMIT 1')
+      .get(waybillNo, waybillNo)
+    if (raw) return getOrder(raw.id)
+  }
+  return null
+}
+
+/**
+ * 处理顺丰运单/路由推送，更新时间轴与状态。
+ * 支持 JSON / 表单字段 / 旧版 XML 片段中的常见字段。
+ */
+export function applySfWaybillPush(payload = {}) {
+  const body = typeof payload === 'string' ? tryParseJson(payload) || {} : payload || {}
+  const nested = body.Body || body.body || body.msgData || body.data || {}
+  const route =
+    body.WaybillRoute ||
+    nested.WaybillRoute ||
+    (Array.isArray(body.WaybillRoute) ? body.WaybillRoute[0] : null) ||
+    (Array.isArray(nested.route) ? nested.route[0] : null) ||
+    body.route ||
+    nested
+
+  const waybillNo =
+    body.waybillNo ||
+    body.mailno ||
+    body.mailNo ||
+    (route && (route.mailno || route.mailNo || route.waybillNo)) ||
+    null
+  const orderId = body.orderId || body.orderid || (route && (route.orderid || route.orderId)) || null
+  const opCode = body.opCode || (route && route.opCode) || body.statusCode || null
+  const remark = body.remark || (route && route.remark) || body.acceptAddress || body.text || '顺丰状态更新'
+  const acceptTime = body.acceptTime || (route && route.acceptTime) || nowIso()
+
+  const order = findOrderBySfRef({ waybillNo, orderId })
+  if (!order) {
+    return { matched: false, waybillNo, orderId }
+  }
+
+  const nextStatus = statusFromSfOpCode(opCode)
+  const udb = udbOfOrder(order.id)
+  addEvent(order.id, 'sf_route', remark, { waybillNo, opCode, acceptTime, raw: body })
+
+  if (nextStatus && udb) {
+    const rank = { booked: 1, collected: 2, in_transit: 3, signed: 4 }
+    const cur = rank[order.status] || 0
+    const nxt = rank[nextStatus] || 0
+    if (nxt > cur) {
+      udb.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(nextStatus, nowIso(), order.id)
+    }
+  }
+
+  return { matched: true, orderId: order.id, waybillNo: waybillNo || order.sfWaybillNo, status: nextStatus || order.status }
+}
+
+function tryParseJson(s) {
+  try {
+    return JSON.parse(s)
+  } catch {
+    return null
+  }
 }
 
 export { BREEDS, ownerOf }
