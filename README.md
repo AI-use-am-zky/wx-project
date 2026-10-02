@@ -6,22 +6,120 @@
 
 ---
 
-## 启动后端
+## 新电脑移植（第一次要做）
+
+### 1. 安装环境
+
+- [Node.js](https://nodejs.org/) **18+**（建议 LTS；`node -v` / `npm -v` 能跑即可）
+- [微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)
+- Git（从 GitHub 拉代码时需要）
+
+### 2. 拿代码
+
+```powershell
+git clone https://github.com/AI-use-am-zky/wx-project.git
+cd wx-project
+```
+
+若旧电脑用代理才能访问 GitHub，新电脑同样可临时加代理，例如：
+
+```powershell
+git -c http.proxy=http://127.0.0.1:7897 -c https.proxy=http://127.0.0.1:7897 clone https://github.com/AI-use-am-zky/wx-project.git
+```
+
+### 3. 配置后端密钥（必做，`.env` 不进 git）
 
 ```powershell
 cd server
 copy .env.example .env
-# 编辑 .env：沙箱联调或生产凭证见下文「环境与配置」
+```
+
+用编辑器打开 `server/.env`，按旧电脑或开放平台补全（至少沙箱联调）：
+
+| 项 | 沙箱联调示例 |
+| --- | --- |
+| `SF_MOCK` | `false` |
+| `SF_ENV` | `sbox` |
+| `SF_PARTNER_ID` | 顾客编码 |
+| `SF_CHECKWORD` | **沙箱**校验码（不要用生产码） |
+| `SF_MONTHLY_CARD` | `7551234567` |
+| `WX_MOCK_LOGIN` / `PAY_MOCK` | `true`（本地仿真登录/支付） |
+
+详细沙箱 vs 生产见下文「环境与配置」。
+
+### 4. 安装依赖并启动后端
+
+在 **`server` 目录**执行：
+
+```powershell
+cd server
 npm install
-npm test
 npm run dev
 ```
 
-- API：http://127.0.0.1:8787
-- 管理端：http://127.0.0.1:8787/admin/ （密码默认见 `.env` 的 `ADMIN_PASSWORD`）
-- 启动日志会打印：`[sf] mock=… env=sbox|prod …`、`[wx] mockLogin=…`
+日常每次开发（依赖装过之后）只要：
 
-真机预览：把小程序 `utils/config.js` 的 `LAN_HOST` 改成电脑局域网 IP；开发者工具勾选「不校验合法域名」（或 `project.config.json` 已设 `urlCheck: false`）。
+```powershell
+cd server
+npm run dev
+```
+
+其它命令：
+
+```powershell
+npm start    # 不 watch，前台跑一次
+npm test     # 跑服务端单测
+```
+
+成功标志：
+
+- 浏览器打开 http://127.0.0.1:8787/health 有返回
+- 终端有：`pet-air API http://127.0.0.1:8787`
+- 管理端：http://127.0.0.1:8787/admin/
+
+**关掉这个终端或电脑休眠后，小程序会 `request:fail`，需要重新 `npm run dev`。**
+
+### 5. 打开小程序
+
+1. 微信开发者工具 → 导入项目 → 选仓库**根目录**（不是 `server`）
+2. AppID 用项目里的测试号 / 你的小程序 AppID
+3. **详情 → 本地设置** → 勾选「不校验合法域名、web-view…」
+4. 编译；开发者工具默认请求 `http://127.0.0.1:8787`
+
+真机预览：改 `utils/config.js` 里的 `LAN_HOST` 为新电脑局域网 IP（`ipconfig` 查看），手机与电脑同一 WiFi。
+
+### 6. 从旧电脑迁什么
+
+| 要迁 | 路径 | 说明 |
+| --- | --- | --- |
+| 密钥 | `server/.env` | **必须**；仓库里没有 |
+| 可选本地库 | `server/data/*.sqlite` | 不要可省略，会重新生成空库 |
+| 不要迁 | `server/node_modules` | 新电脑重新 `npm install` |
+
+---
+
+## 启动后端（速查）
+
+```powershell
+cd server
+npm install          # 仅首次或 package.json 变更后
+npm run dev          # 开发：热重载，保持运行
+```
+
+- API：http://127.0.0.1:8787  
+- 健康检查：http://127.0.0.1:8787/health  
+- 管理端：http://127.0.0.1:8787/admin/ （密码见 `.env` 的 `ADMIN_PASSWORD`）  
+- 启动日志：`[sf] mock=… env=sbox|prod …`、`[wx] mockLogin=…`
+
+没有 `server/.env` 时先：
+
+```powershell
+cd server
+copy .env.example .env
+# 再编辑 .env 填入顺丰/微信等配置
+```
+
+真机预览：`utils/config.js` 的 `LAN_HOST`；开发者工具勾选「不校验合法域名」（或已设 `project.config.json` → `urlCheck: false`）。
 
 ## 小程序主路径
 
