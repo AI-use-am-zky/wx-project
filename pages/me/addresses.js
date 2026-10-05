@@ -1,5 +1,7 @@
 const { requireLoginPage } = require('../../utils/auth')
 const { request } = require('../../utils/request')
+const { getBook } = require('../../utils/book')
+const { looksLikeFullAddress, parseAddress, mergeParsed } = require('../../utils/address-parse')
 
 const EMPTY = { name: '', phone: '', province: '', city: '', district: '', detail: '' }
 
@@ -19,12 +21,34 @@ Page({
     shown: [],
     keyword: '',
     showForm: false,
+    compose: false,
     editingId: '',
+    pasteText: '',
     form: { ...EMPTY }
   },
   onLoad(q) {
     this.pick = (q && q.pick) || ''
+    this.compose = Boolean(q && q.compose === '1')
     wx.setNavigationBarTitle({ title: '地址簿' })
+    if (!this.compose) return
+    const book = getBook()
+    const current = this.pick === 'sender' ? book.sender : this.pick === 'receiver' ? book.receiver : null
+    const hasCurrent = current && current.name
+    this.setData({
+      compose: true,
+      showForm: true,
+      editingId: hasCurrent && current.id ? current.id : '',
+      form: hasCurrent
+        ? {
+            name: current.name || '',
+            phone: current.phone || '',
+            province: current.province || '',
+            city: current.city || '',
+            district: current.district || '',
+            detail: current.detail || ''
+          }
+        : { ...EMPTY }
+    })
   },
   onShow() {
     requireLoginPage().then(() => this.reload()).catch(() => {})
@@ -78,6 +102,7 @@ Page({
     if (!item) return
     this.setData({
       showForm: true,
+      pasteText: '',
       editingId: item.id,
       form: {
         name: item.name || '',
@@ -107,23 +132,58 @@ Page({
     wx.showToast({ title: '点卡片上的编辑或删除', icon: 'none' })
   },
   openForm() {
-    this.setData({ showForm: true, editingId: '', form: { ...EMPTY } })
+    this.setData({ showForm: true, editingId: '', pasteText: '', form: { ...EMPTY } })
   },
   closeForm() {
-    this.setData({ showForm: false, editingId: '', form: { ...EMPTY } })
+    if (this.compose) {
+      wx.navigateBack()
+      return
+    }
+    this.setData({ showForm: false, editingId: '', pasteText: '', form: { ...EMPTY } })
   },
   onF(e) {
     this.setData({ [`form.${e.currentTarget.dataset.k}`]: e.detail.value })
   },
+  onPaste(e) {
+    const text = e.detail.value || ''
+    const prev = this.data.pasteText || ''
+    const pasted = text.length - prev.length > 8
+    this.setData({ pasteText: text })
+    if (!looksLikeFullAddress(text)) return
+    const parsed = parseAddress(text)
+    const useful = parsed.phone || parsed.province || parsed.district || parsed.detail
+    if (!useful) return
+    this.setData({ form: mergeParsed(this.data.form, parsed) })
+    if (pasted) wx.showToast({ title: '已识别地址', icon: 'none' })
+  },
   save() {
     const form = this.data.form
     const editingId = this.data.editingId
+    const missing = ['name', 'phone', 'province', 'city', 'district', 'detail'].some(
+      (key) => !String(form[key] || '').trim()
+    )
+    if (missing) {
+      wx.showToast({ title: '请把地址填完整', icon: 'none' })
+      return
+    }
+    if (!/^1\d{10}$/.test(String(form.phone).trim())) {
+      wx.showToast({ title: '手机号须为11位', icon: 'none' })
+      return
+    }
     const req = editingId
       ? request({ url: '/addresses/' + editingId, method: 'PUT', data: form })
-      : request({ url: '/addresses', method: 'POST', data: form })
+      : request({ url: '/addresses', method: 'POST', data: { ...form, role_hint: this.pick || null } })
     req
-      .then(() => {
-        this.closeForm()
+      .then((saved) => {
+        if (this.pick) {
+          wx.setStorageSync('addressPicked', {
+            role: this.pick,
+            address: { ...form, id: (saved && saved.id) || editingId }
+          })
+          wx.navigateBack()
+          return
+        }
+        this.setData({ showForm: false, editingId: '', pasteText: '', form: { ...EMPTY } })
         return this.reload()
       })
       .catch((e) => wx.showToast({ title: e.message || '保存失败', icon: 'none' }))

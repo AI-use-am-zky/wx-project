@@ -28,15 +28,19 @@ function emptyBook() {
     cratePhotoPreviews: [],
     quarantinePhotoPreviews: [],
     agency: { name: '', phone: '', petName: '' },
+    pickupTime: '今天两小时内',
+    etaKey: 'standard',
+    insureMode: 'none',
+    fixedYuan: '500',
     step: '',
     resumeHidden: false
   }
 }
 
+const SEND_TAB = '/pages/send/index'
+
 const STEP_URL = {
-  addresses: '/pages/book/addresses',
-  'pet-quote': '/pages/book/pet-quote',
-  'quote-result': '/pages/book/quote-result',
+  goods: '/pages/book/goods',
   fulfill: '/pages/book/fulfill',
   pay: '/pages/book/pay'
 }
@@ -81,13 +85,15 @@ function draftResume() {
       b.species
   )
   if (!started) return null
-  if (!b.quote && ['quote-result', 'fulfill', 'pay'].includes(b.step)) {
-    return { url: STEP_URL[b.species ? 'pet-quote' : 'addresses'], text: '点此继续上次填写' }
+  const deep = b.step === 'fulfill' || b.step === 'pay'
+  if (deep && b.quote && !quoteExpired(b)) {
+    return { url: STEP_URL[b.step], tab: false, text: '订单未支付，点此继续上次填写' }
   }
-  if (quoteExpired(b) && ['quote-result', 'fulfill', 'pay'].includes(b.step)) {
-    return { url: STEP_URL['pet-quote'], text: '报价已过期，点此继续填写' }
+  if (b.step === 'goods') {
+    return { url: STEP_URL.goods, tab: false, text: '点此继续上次填写' }
   }
-  return { url: STEP_URL[b.step] || STEP_URL.addresses, text: '订单未支付，点此继续上次填写' }
+  const expired = deep && quoteExpired(b)
+  return { url: SEND_TAB, tab: true, text: expired ? '报价已过期，点此继续填写' : '点此继续上次填写' }
 }
 
 function hideResume() {
@@ -102,11 +108,6 @@ function resetBook() {
   wx.removeStorageSync('book')
 }
 
-function addrText(a) {
-  if (!a) return '请填写'
-  return `${a.name} ${a.phone}\n${a.province}${a.city}${a.district}${a.detail}`
-}
-
 module.exports = {
   getBook,
   saveBook,
@@ -115,6 +116,5 @@ module.exports = {
   hideResume,
   resetBook,
   emptyBook,
-  addrText,
   quoteExpired
 }

@@ -10,8 +10,23 @@ page { background: #f3efe8; color: #15241e; }
   padding-left: 24rpx;
   padding-right: 24rpx;
 }
-.search {
+.top-row {
   margin-top: 12rpx;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+.back {
+  width: 56rpx;
+  height: 72rpx;
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 52rpx;
+  font-weight: 300;
+  line-height: 72rpx;
+}
+.search {
+  flex: 1;
   height: 72rpx;
   border-radius: 36rpx;
   background: rgba(255, 255, 255, 0.92);

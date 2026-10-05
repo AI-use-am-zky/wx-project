@@ -32,4 +32,4 @@ function ensurePetFields(book) {
   return book
 }
 
-module.exports = { SPECIES, resolvePetFromName, goodsFilled, ensurePetFields }
+module.exports = { resolvePetFromName, goodsFilled, ensurePetFields }

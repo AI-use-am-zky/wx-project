@@ -1,4 +1,4 @@
-<nav-bar title="宠途空运" />
+<nav-bar title="云崽飞" />
 <!-- 轮播图容器 -->
 <swiper class="home-swiper" indicator-dots="{{true}}" autoplay="{{true}}" interval="3000" duration="500" circular="{{true}}">
   <swiper-item wx:for="{{swiperList}}" wx:key="id">
@@ -6,21 +6,39 @@
   </swiper-item>
 </swiper>
 
-<view class="btn-wrap">
-  <button class="kefu-btn" open-type="contact" plain="true">
-    <image src="/images/kefu.png"></image>
+<view
+  wx:if="{{kefuOn}}"
+  class="kefu-float {{kefuCollapsed ? 'is-collapsed' : ''}} {{kefuSide === 'left' ? 'is-left' : 'is-right'}}"
+  style="left: {{kefuX}}px; top: {{kefuY}}px; width: {{kefuW}}px; height: {{kefuH}}px; {{kefuAnim}}"
+>
+  <button
+    wx:if="{{!kefuCollapsed}}"
+    class="kefu-btn"
+    open-type="contact"
+    session-from="home"
+    hover-class="none"
+    plain="{{true}}"
+    bindtouchstart="onKefuStart"
+    catchtouchmove="onKefuMove"
+    bindtouchend="onKefuEnd"
+    bindtouchcancel="onKefuEnd"
+  >
+    <image class="kefu-ico" src="/images/kefu-icon.png" mode="aspectFit"></image>
+    <text class="kefu-name">客服</text>
   </button>
+  <view wx:else class="kefu-tab" catchtap="expandKefu"></view>
 </view>
 <view class="home-body">
   <view class="hero">
     <view class="kicker">PET AIR · DOOR TO DOOR</view>
-    <view class="h1">把爱宠，安全送到</view>
-    <view class="h1">下一座城</view>
-    <view class="hero-sub">只做空运门到门。填好寄收地址再估价，全程不跳转其他快递小程序。</view>
+    <view class="h1">把爱宠，安全送到下一座城</view>
+    <view class="h1"></view>
+    <view class="hero-sub">只做空运门到门。填好寄收地址再估价，全程高质高效服务。</view>
     <view class="hero-chips">
-      <text class="chip chip-white">一单一只宠物</text>
-      <text class="chip chip-white">上门取件</text>
-      <text class="chip chip-white">承运询价</text>
+      <text class="chip chip-white">上门取宠</text>
+      <text class="chip chip-white">喂水喂食</text>
+      <text class="chip chip-white">全程空调</text>
+      <text class="chip chip-white">报价透明</text>
     </view>
   </view>
 
@@ -28,13 +46,13 @@
     <view class="addr">
       <view class="rail"></view>
       <view class="addr-row">
-        <view class="pin pin-from">寄</view>
+        <view class="pin pin-from">起</view>
         <view class="addr-main" bindtap="editWho" data-who="sender">
           <view class="addr-top">
             <text class="addr-name">{{senderName}}</text>
             <text class="addr-phone" wx:if="{{senderPhone}}">{{senderPhone}}</text>
           </view>
-          <view class="addr-detail {{senderLine?'':'placeholder'}}">{{senderLine || '请选择寄件地址'}}</view>
+          <view class="addr-detail {{senderLine?'':'placeholder'}}">{{senderLine || '点击填写寄件地址'}}</view>
         </view>
         <view class="addr-book" catchtap="openBook" data-who="sender">
           <view class="book-ico"></view>
@@ -42,13 +60,13 @@
         </view>
       </view>
       <view class="addr-row">
-        <view class="pin pin-to">收</view>
+        <view class="pin pin-to">终</view>
         <view class="addr-main" bindtap="editWho" data-who="receiver">
           <view class="addr-top">
             <text class="addr-name">{{receiverName}}</text>
             <text class="addr-phone" wx:if="{{receiverPhone}}">{{receiverPhone}}</text>
           </view>
-          <view class="addr-detail {{receiverLine?'':'placeholder'}}">{{receiverLine || '请选择收件地址'}}</view>
+          <view class="addr-detail {{receiverLine?'':'placeholder'}}">{{receiverLine || '点击填写收件地址'}}</view>
         </view>
         <view class="addr-book" catchtap="openBook" data-who="receiver">
           <view class="book-ico"></view>
@@ -58,10 +76,6 @@
     </view>
     <view class="go-row">
       <view class="go-book" bindtap="goBook">去下单</view>
-      <button class="card-kefu" open-type="contact">
-        <image src="/images/kefu.png" mode="aspectFill"></image>
-        <text>客服</text>
-      </button>
     </view>
   </view>
 
@@ -154,7 +168,7 @@
 
   <view class="card">
     <view class="h2">服务说明</view>
-    <view class="sub" style="margin-top:16rpx">上门取件日期由你选，具体时段和航班按承运方可约时间安排。报价含门到门空运，支付给本服务商，不跳转其他小程序。</view>
+    <view class="sub" style="margin-top:16rpx">上门取件日期由你选，具体时段和航班按承运方可约时间安排。报价含门到门空运，喂食喂水，航空箱，检疫等服务。</view>
   </view>
 </view>
 

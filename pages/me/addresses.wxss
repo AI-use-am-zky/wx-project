@@ -65,6 +65,18 @@ page { background: #f3efe8; color: #15241e; }
 .op.danger { color: #c45a28; }
 
 .form-title { font-size: 32rpx; font-weight: 700; margin-bottom: 8rpx; }
+.paste {
+  margin: 16rpx 0 8rpx;
+  padding: 20rpx 24rpx;
+  background: #f6f3ee;
+  border-radius: 16rpx;
+}
+.paste-input {
+  width: 100%;
+  min-height: 88rpx;
+  font-size: 28rpx;
+  line-height: 1.5;
+}
 .form-actions { display: flex; gap: 16rpx; margin-top: 12rpx; }
 .ghost {
   flex: 1;

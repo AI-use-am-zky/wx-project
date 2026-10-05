@@ -87,7 +87,7 @@ page { background: #f3efe8; color: #15241e; }
 }
 .pack-sub { margin-left: 12rpx; font-size: 22rpx; font-weight: 400; color: #8a6a3a; }
 .pack-more { font-size: 24rpx; color: #7a847e; padding-right: 16rpx; }
-.crate-scroll { margin-top: 16rpx; white-space: nowrap; }
+.crate-scroll { margin-top: 16rpx; height: 240rpx; width: 100%; }
 .crate-row { display: inline-flex; gap: 16rpx; padding-right: 16rpx; }
 .crate {
   width: 520rpx;
@@ -122,6 +122,18 @@ page { background: #f3efe8; color: #15241e; }
 }
 .radio.on { border: 10rpx solid #1e4d3e; }
 .pack-note { margin-top: 16rpx; font-size: 22rpx; color: #8a6a3a; padding-right: 16rpx; }
+.q-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid #f0ece6;
+}
+.q-row:last-child { border-bottom: none; }
+.q-main { flex: 1; min-width: 0; }
+.q-name { font-size: 30rpx; font-weight: 700; display: flex; align-items: center; gap: 12rpx; }
+.q-fee { font-size: 24rpx; font-weight: 600; color: #c45a28; }
+.q-sub { margin-top: 6rpx; font-size: 22rpx; color: #7a847e; line-height: 1.4; }
 
 .metric { min-height: 108rpx; border-bottom: 1rpx solid #f0ece6; }
 .sheet .metric:last-child { border-bottom: none; }
@@ -198,7 +210,8 @@ page { background: #f3efe8; color: #15241e; }
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 16rpx 32rpx 32rpx;
+  z-index: 20;
+  padding: 16rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
   background: linear-gradient(180deg, rgba(243, 239, 232, 0), #f3efe8 28%);
 }
 .ok {

@@ -1,4 +1,5 @@
 <view class="topbar" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+  <view class="topbar-back" style="top: {{statusBarHeight}}px; height: {{navHeight - statusBarHeight}}px;" bindtap="goBack">‹</view>
   <text class="topbar-title">寄快递</text>
 </view>
 <view style="height: {{navHeight}}px;"></view>
@@ -34,11 +35,6 @@
       <view class="book-ico book-ico-to">簿</view>
       <text>地址簿</text>
     </view>
-  </view>
-  <view class="invite" wx:if="{{showInvite}}">
-    <text class="invite-txt">可填写对方手机，邀请对方补全收件地址</text>
-    <text class="invite-go" bindtap="editWho" data-who="receiver">去填写</text>
-    <text class="invite-x" catchtap="closeInvite">×</text>
   </view>
 </view>
 

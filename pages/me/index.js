@@ -1,5 +1,5 @@
 const { isLoggedIn, login, needsProfile, errMessage } = require('../../utils/auth')
-const { go, goOrders } = require('../../utils/nav')
+const { go, goOrders, goBack: leavePage } = require('../../utils/nav')
 const { fetchBadges, markBadgeSeen, logOp } = require('../../utils/session')
 const { isPickingMedia } = require('../../utils/media-pick')
 const { request } = require('../../utils/request')
@@ -116,6 +116,9 @@ Page({
       return
     }
     wx.navigateTo({ url: '/pages/me/profile' })
+  },
+  goBack() {
+    leavePage()
   },
   goMsg() {
     go('/pages/me/messages')

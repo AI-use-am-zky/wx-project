@@ -18,6 +18,7 @@
 <view class="list">
   <view class="empty" wx:if="{{!shown.length && !showForm}}">暂无保存的地址</view>
 
+  <block wx:if="{{!compose}}">
   <view class="card" wx:for="{{shown}}" wx:key="id" data-index="{{index}}" bindtap="choose">
     <view class="who">
       <text class="name">{{item.name}}</text>
@@ -30,9 +31,21 @@
       <view class="op danger" catchtap="remove" data-index="{{index}}">删除</view>
     </view>
   </view>
+  </block>
 
   <view class="card form" wx:if="{{showForm}}">
     <view class="form-title">{{editingId ? '编辑地址' : '新增地址'}}</view>
+    <view class="paste">
+      <textarea
+        class="paste-input"
+        placeholder="粘贴整段地址，自动识别姓名、手机和地址"
+        placeholder-class="ph"
+        value="{{pasteText}}"
+        bindinput="onPaste"
+        auto-height
+        maxlength="300"
+      />
+    </view>
     <view class="field">
       <view class="field-label">姓名</view>
       <input placeholder="开门联系人" value="{{form.name}}" data-k="name" bindinput="onF" />
@@ -50,7 +63,7 @@
       <input placeholder="例如 杭州市" value="{{form.city}}" data-k="city" bindinput="onF" />
     </view>
     <view class="field">
-      <view class="field-label">区</view>
+      <view class="field-label">区/县</view>
       <input placeholder="例如 西湖区" value="{{form.district}}" data-k="district" bindinput="onF" />
     </view>
     <view class="field">

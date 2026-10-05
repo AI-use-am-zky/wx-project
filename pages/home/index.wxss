@@ -8,37 +8,61 @@
   height: 100%;
 }
 
-/* 1. 外层容器：负责定位 */
-.btn-wrap {
+.kefu-float {
   position: fixed;
-  bottom: 150rpx;
-  right: 30rpx;
   z-index: 999;
+  box-sizing: border-box;
 }
-
-/* 2. 客服浮动按钮 */
 .kefu-btn {
-  background-color: #0f5e35 !important;
-  width: 100rpx !important;
-  height: 100rpx !important;
+  background: linear-gradient(165deg, #3c7d66 0%, #1b4639 100%) !important;
+  width: 100% !important;
+  height: 100% !important;
   padding: 0 !important;
   margin: 0;
   border: none;
   border-radius: 50%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(15, 94, 53, 0.4);
+  gap: 2rpx;
+  overflow: hidden;
+  line-height: 1;
+  box-shadow: 0 12rpx 28rpx rgba(27, 70, 57, 0.28);
 }
 .kefu-btn::after { border: none; }
-.kefu-btn image {
-  width: 100%;
-  height: 100%;
+.kefu-ico {
+  width: 52rpx;
+  height: 52rpx;
   display: block;
 }
-.kefu-btn:active {
-  transform: scale(1.2);
-  transition: transform 0.15s ease;
+.kefu-name {
+  color: #fff;
+  font-size: 18rpx;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 1rpx;
+}
+.kefu-tab {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #3c7d66, #1b4639);
+  box-shadow: 0 8rpx 20rpx rgba(27, 70, 57, 0.22);
+  position: relative;
+}
+.kefu-float.is-right .kefu-tab { border-radius: 20rpx 0 0 20rpx; }
+.kefu-float.is-left .kefu-tab { border-radius: 0 20rpx 20rpx 0; }
+.kefu-tab::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6rpx;
+  height: 36rpx;
+  margin-left: -3rpx;
+  margin-top: -18rpx;
+  border-radius: 6rpx;
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .home-body {
@@ -176,27 +200,6 @@
   align-items: center;
   justify-content: center;
 }
-.card-kefu {
-  width: 96rpx;
-  margin: 0;
-  padding: 0;
-  background: transparent;
-  border: none;
-  line-height: 1.2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4rpx;
-  font-size: 20rpx;
-  color: #5c6560;
-}
-.card-kefu::after { border: none; }
-.card-kefu image {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 16rpx;
-}
-
 .guide-row {
   display: flex;
   gap: 16rpx;
@@ -319,11 +322,12 @@
 .promo-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
-  padding: 12rpx 20rpx 20rpx;
+  justify-content: space-between;
+  padding: 12rpx 20rpx 4rpx;
 }
 .promo-cell {
-  width: calc(50% - 8rpx);
+  width: 48%;
+  margin-bottom: 16rpx;
   background: #fff;
   border-radius: 28rpx;
   padding: 8rpx 16rpx 28rpx;

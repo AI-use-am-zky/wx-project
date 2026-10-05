@@ -1,6 +1,7 @@
 <view class="me-page" style="padding-top: {{padTop}}px;">
   <view class="me-hero" style="padding-top: {{navPad}}px;">
     <view class="nav" style="height: {{navH}}px;">
+      <view class="nav-back" bindtap="goBack">‹</view>
       <view class="nav-icons">
         <view class="ico" bindtap="goMsg">消息</view>
         <view class="ico" bindtap="goSet">设置</view>

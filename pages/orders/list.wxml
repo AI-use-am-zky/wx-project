@@ -1,4 +1,6 @@
 <view class="top" style="padding-top: {{statusBarHeight}}px;">
+  <view class="top-row">
+  <view class="back" bindtap="goBack">‹</view>
   <view class="search">
     <text class="search-ico">搜</text>
     <input
@@ -9,6 +11,7 @@
       value="{{keyword}}"
       bindinput="onSearch"
     />
+  </view>
   </view>
   <scroll-view class="tabs" scroll-x>
     <view class="tab-row">

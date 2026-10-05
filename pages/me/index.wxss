@@ -5,9 +5,19 @@
 }
 .nav {
   display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   padding: 0 0 8rpx;
+}
+.nav-back {
+  width: 64rpx;
+  height: 100%;
+  color: #fff;
+  font-size: 52rpx;
+  font-weight: 300;
+  line-height: 1;
+  display: flex;
+  align-items: center;
 }
 .nav-icons { display: flex; gap: 16rpx; }
 .ico {

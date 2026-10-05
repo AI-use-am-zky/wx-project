@@ -1,4 +1,10 @@
 <view class="nav-spacer" style="height: {{navHeight}}px;"></view>
 <view class="nav-bar" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+  <view
+    wx:if="{{showBack}}"
+    class="nav-back"
+    style="top: {{statusBarHeight}}px; height: {{navHeight - statusBarHeight}}px;"
+    bindtap="goBack"
+  >‹</view>
   <text class="nav-title">{{title}}</text>
 </view>

@@ -1,3 +1,5 @@
+const { goBack: leavePage } = require('../../utils/nav')
+
 function measure() {
   let statusBarHeight = 20
   let menu = null
@@ -23,7 +25,8 @@ Component({
   },
   data: {
     statusBarHeight: 20,
-    navHeight: 64
+    navHeight: 64,
+    showBack: false
   },
   lifetimes: {
     created() {
@@ -33,6 +36,21 @@ Component({
     },
     attached() {
       this.setData(measure())
+      this.refreshBack()
+    }
+  },
+  pageLifetimes: {
+    show() {
+      this.refreshBack()
+    }
+  },
+  methods: {
+    refreshBack() {
+      const pages = getCurrentPages()
+      this.setData({ showBack: pages.length > 1 })
+    },
+    goBack() {
+      leavePage()
     }
   }
 })

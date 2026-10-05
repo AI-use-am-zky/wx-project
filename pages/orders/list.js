@@ -5,6 +5,7 @@ const { getBook, saveBook } = require('../../utils/book')
 const { findProvince, indexesFor, cityFromIndex } = require('../../utils/regions')
 const { logOp } = require('../../utils/session')
 const { isPickingMedia } = require('../../utils/media-pick')
+const { goBack: leavePage } = require('../../utils/nav')
 
 const STATUS_TEXT = {
   pending_pay: '待支付',
@@ -81,6 +82,9 @@ Page({
     sentCount: 0,
     payCount: 0,
     emptyText: '暂无运单'
+  },
+  goBack() {
+    leavePage()
   },
   onShow() {
     if (isPickingMedia()) return

@@ -24,14 +24,14 @@
       <view class="pack-title"><text class="pack-mark">箱</text>包装服务<text class="pack-sub">航空箱，下单可选购</text></view>
       <text class="pack-more" bindtap="moreCrates">更多 ›</text>
     </view>
-    <scroll-view class="crate-scroll" scroll-x>
+    <scroll-view class="crate-scroll" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}" bounces="{{false}}">
       <view class="crate-row">
         <view
           wx:for="{{crates}}"
           wx:key="id"
           class="crate {{crateSkuId===item.id?'on':''}}"
-          data-id="{{item.id}}"
-          bindtap="pickCrate"
+          data-sku="{{item.id}}"
+          catchtap="pickCrate"
         >
           <image class="crate-img" src="{{item.image}}" mode="aspectFit" />
           <view class="crate-body">
@@ -46,6 +46,24 @@
       </view>
     </scroll-view>
     <view class="pack-note">不选则默认自备航空箱，支付前需要上传箱照。</view>
+  </view>
+
+  <view class="sheet">
+    <view class="block-title">检疫证明</view>
+    <view class="q-row {{quarantineMode==='self'?'on':''}}" data-mode="self" catchtap="pickQuarantine">
+      <view class="q-main">
+        <view class="q-name">自备上传</view>
+        <view class="q-sub">下单时手里有检疫证明，支付前上传</view>
+      </view>
+      <view class="radio {{quarantineMode==='self'?'on':''}}"></view>
+    </view>
+    <view class="q-row {{quarantineMode==='agency'?'on':''}}" data-mode="agency" catchtap="pickQuarantine">
+      <view class="q-main">
+        <view class="q-name">代办检疫<text class="q-fee">代办费 ¥{{quarantineYuan}}</text></view>
+        <view class="q-sub">现在没有证明也可以下单，由我们代为办理</view>
+      </view>
+      <view class="radio {{quarantineMode==='agency'?'on':''}}"></view>
+    </view>
   </view>
 
   <view class="sheet">

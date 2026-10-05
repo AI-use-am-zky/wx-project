@@ -20,4 +20,15 @@ function goOrders(tab) {
   withLogin(() => wx.switchTab({ url: '/pages/orders/list' }))
 }
 
-module.exports = { withLogin, go, goOrders }
+function goBack() {
+  const pages = getCurrentPages()
+  if (pages.length > 1) {
+    wx.navigateBack()
+    return
+  }
+  const route = pages[0] && pages[0].route
+  if (route === 'pages/home/index') return
+  wx.switchTab({ url: '/pages/home/index' })
+}
+
+module.exports = { withLogin, go, goOrders, goBack }

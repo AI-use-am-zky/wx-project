@@ -3,7 +3,9 @@ const { requireLoginPage } = require('../../utils/auth')
 const { findProvince, indexesFor, cityFromIndex, samePlace } = require('../../utils/regions')
 const { isPickingMedia } = require('../../utils/media-pick')
 const { request, yuan } = require('../../utils/request')
+const { openAddressForm, openAddressBook } = require('../../utils/address-entry')
 const { goodsFilled, ensurePetFields } = require('../../utils/pet')
+const { goBack: leavePage } = require('../../utils/nav')
 
 const TIMES = ['今天两小时内', '今天 18:00 前', '明天 09:00-12:00', '明天 12:00-18:00']
 const PAYS = ['寄付现结', '到付']
@@ -90,7 +92,6 @@ Page({
     receiverLine: '',
     senderPhoneMask: '',
     receiverPhoneMask: '',
-    showInvite: true,
     pickupTime: '今天两小时内',
     goodsText: '请填写宠物和重量',
     goodsReady: false,
@@ -109,6 +110,24 @@ Page({
     this.takePicked()
     this.sync()
     this.maybeQuote()
+  },
+  onHide() {
+    this.remember()
+  },
+  goBack() {
+    this.remember()
+    leavePage()
+  },
+  remember() {
+    if (!this._synced) return
+    const b = getBook()
+    const d = this.data
+    b.pickupTime = d.pickupTime || b.pickupTime
+    b.etaKey = d.etaKey || b.etaKey
+    b.insureMode = d.insureMode || 'none'
+    b.fixedYuan = d.fixedYuan || b.fixedYuan
+    if (d.remark != null) b.petNote = d.remark
+    saveBook()
   },
   takePicked() {
     const picked = wx.getStorageSync('addressPicked')
@@ -145,7 +164,18 @@ Page({
     const cents = preview != null ? preview : b.previewTotalCents
     const total = cents != null ? yuan(cents) : '--'
     const priced = cents != null ? '¥' + yuan(cents) : this.data.quoting ? '估价中' : '待估价'
-    const etaPrice = (key) => (cents != null && this.data.etaKey === key ? priced : cents != null ? '¥' + yuan(cents) : priced)
+    const etaKey = b.etaKey || 'standard'
+    const insureMode = b.insureMode && b.insureMode !== 'none' ? b.insureMode : b.insure ? 'basic' : 'none'
+    const pickupTime = b.pickupTime || '今天两小时内'
+    const fixedYuan = b.fixedYuan || '500'
+    const remark = b.petNote || ''
+    const etaPrice = (key) => (cents != null && etaKey === key ? priced : cents != null ? '¥' + yuan(cents) : priced)
+    this._synced = true
+    this.data.pickupTime = pickupTime
+    this.data.etaKey = etaKey
+    this.data.insureMode = insureMode
+    this.data.fixedYuan = fixedYuan
+    this.data.remark = remark
     this.setData({
       sender,
       receiver,
@@ -153,13 +183,16 @@ Page({
       receiverLine: lineOf(receiver),
       senderPhoneMask: maskPhone(sender.phone),
       receiverPhoneMask: maskPhone(receiver.phone),
+      pickupTime,
+      etaKey,
+      fixedYuan,
       goodsText: goods || '请填写宠物和重量',
       goodsReady: goodsFilled(b),
-      insureMode: b.insure ? (this.data.insureMode === 'fixed' ? 'fixed' : 'basic') : 'none',
+      insureMode,
       declaredYuan: b.declaredValueCents
         ? String(Math.round(Number(b.declaredValueCents) / 100))
         : this.data.declaredYuan,
-      remark: b.petNote || this.data.remark,
+      remark,
       totalText: total,
       etas: [
         { key: 'express', name: '空运次日', eta: '明天 18:00 前', price: etaPrice('express') },
@@ -184,7 +217,7 @@ Page({
     if (!canQuote(b) || this._quoting) return Promise.resolve(null)
     this._quoting = true
     this.setData({ quoting: true, totalText: '...' })
-    b.pickupDate = pickupDateFromLabel(this.data.pickupTime)
+    b.pickupDate = pickupDateFromLabel(b.pickupTime || this.data.pickupTime)
     saveBook()
     return request({
       url: '/quotes',
@@ -217,22 +250,11 @@ Page({
         return null
       })
   },
-  editWho() {
-    const b = getBook()
-    if (!b.fromCity || !b.toCity) {
-      wx.showToast({ title: '请先用地址簿选择寄收地址', icon: 'none' })
-      return
-    }
-    wx.navigateTo({ url: '/pages/book/addresses' })
+  editWho(e) {
+    openAddressForm(e.currentTarget.dataset.who).catch(() => {})
   },
   openBook(e) {
-    const who = e.currentTarget.dataset.who
-    requireLoginPage()
-      .then(() => wx.navigateTo({ url: '/pages/me/addresses?pick=' + who + '&title=地址簿' }))
-      .catch(() => {})
-  },
-  closeInvite() {
-    this.setData({ showInvite: false })
+    openAddressBook(e.currentTarget.dataset.who).catch(() => {})
   },
   swap() {
     const b = getBook()
@@ -255,11 +277,13 @@ Page({
     wx.showActionSheet({
       itemList: TIMES,
       success: (res) => {
-        this.setData({ pickupTime: TIMES[res.tapIndex] })
+        const pickupTime = TIMES[res.tapIndex]
         const b = getBook()
+        b.pickupTime = pickupTime
         b.quote = null
         b.previewTotalCents = null
         saveBook()
+        this.setData({ pickupTime })
         this.maybeQuote()
       }
     })
@@ -272,6 +296,7 @@ Page({
           wx.showToast({ title: '请先填好寄收地址', icon: 'none' })
           return
         }
+        setBookStep('goods')
         wx.navigateTo({ url: '/pages/book/goods' })
       })
       .catch(() => {})
@@ -289,18 +314,22 @@ Page({
     })
   },
   pickEta(e) {
-    this.setData({ etaKey: e.currentTarget.dataset.key })
+    const etaKey = e.currentTarget.dataset.key
+    const b = getBook()
+    b.etaKey = etaKey
+    saveBook()
+    this.setData({ etaKey })
     this.sync()
   },
   pickInsure(e) {
     const mode = e.currentTarget.dataset.mode
     const b = getBook()
     b.insure = true
-    this.data.insureMode = mode
+    b.insureMode = mode
     if (mode === 'fixed') {
-      const yuanValue = Number(this.data.fixedYuan) || 500
+      const yuanValue = Number(b.fixedYuan || this.data.fixedYuan) || 500
+      b.fixedYuan = String(yuanValue)
       b.declaredValueCents = yuanValue * 100
-      this.data.declaredYuan = String(yuanValue)
     }
     saveBook()
     this.sync()
@@ -309,18 +338,20 @@ Page({
     const yuanValue = e.currentTarget.dataset.yuan
     const b = getBook()
     b.insure = true
+    b.insureMode = 'fixed'
+    b.fixedYuan = String(yuanValue)
     b.declaredValueCents = Number(yuanValue) * 100
     saveBook()
-    this.setData({ insureMode: 'fixed', fixedYuan: String(yuanValue), declaredYuan: String(yuanValue) })
     this.sync()
   },
   onDeclared(e) {
     const value = String(e.detail.value || '').replace(/[^\d.]/g, '')
     const b = getBook()
     b.insure = true
+    b.insureMode = 'basic'
     b.declaredValueCents = Math.round(Number(value || 0) * 100)
     saveBook()
-    this.setData({ declaredYuan: value, insureMode: 'basic' })
+    this.setData({ declaredYuan: value })
     this.sync()
   },
   noop() {},
