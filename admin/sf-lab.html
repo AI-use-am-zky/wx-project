@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>顺丰测试端</title>
+  <style>
+    :root { --bg:#f6f3ee; --card:#fff; --ink:#1f2a24; --muted:#6b746e; --acc:#2d5a4a; --bad:#8d2f2f; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
+    header { background:var(--acc); color:#fff; padding:16px 20px; }
+    main { max-width:980px; margin:20px auto; padding:0 16px 40px; }
+    .card { background:var(--card); border-radius:12px; padding:16px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+    h1 { font-size:18px; margin:0 0 4px; }
+    h2 { font-size:15px; margin:0 0 10px; }
+    .muted { color:var(--muted); font-size:13px; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+    label { display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--muted); min-width:140px; flex:1; }
+    input, select, button { font: inherit; padding:8px 10px; border:1px solid #d7ddd8; border-radius:8px; }
+    button { background:var(--acc); color:#fff; border:none; cursor:pointer; }
+    button.ghost { background:#fff; color:var(--acc); border:1px solid var(--acc); }
+    button.bad { background:var(--bad); }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .modes { display:flex; gap:8px; }
+    .mode { background:#fff; color:var(--ink); border:1px solid #d7ddd8; }
+    .mode.on { background:var(--acc); color:#fff; border-color:var(--acc); }
+    .banner { padding:10px 12px; border-radius:8px; background:#fff6e8; color:#6a4b16; font-size:13px; }
+    .result-title { font-size:16px; margin:0 0 6px; }
+    .ok { color:#1d6b45; }
+    .fail { color:var(--bad); }
+    pre { white-space:pre-wrap; word-break:break-word; font-size:12px; background:#f3f6f4; padding:10px; border-radius:8px; max-height:420px; overflow:auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>顺丰测试端</h1>
+    <div class="muted" id="status" style="color:#d9efe4">正在读取环境…</div>
+  </header>
+  <main>
+    <div class="card">
+      <div class="banner">估价只问产品，不会生成运单。真实下单打的是当前 <b>.env</b> 的生产或沙箱，成功会出运单并可能计费。小程序下单逻辑不变，仍然只寄活体。</div>
+      <div class="row" style="margin-top:12px">
+        <div class="modes">
+          <button type="button" class="mode on" id="modeLive" onclick="setKind('live')">活体</button>
+          <button type="button" class="mode" id="modeNormal" onclick="setKind('normal')">普通货物</button>
+        </div>
+      </div>
+      <p class="muted" id="cargoHint">托寄物将写成「活体动物-dog-测试」，与小程序下单一致。</p>
+      <div class="row">
+        <div class="modes" id="cardModes"></div>
+      </div>
+      <p class="muted" id="cardHint">正在读取月结卡…</p>
+    </div>
+
+    <div class="card">
+      <h2>寄件</h2>
+      <div class="row" id="sender"></div>
+      <h2>收件</h2>
+      <div class="row" id="receiver"></div>
+      <div class="row">
+        <label>重量 kg<input id="weightKg" value="3" /></label>
+        <label>取件日<input id="pickupDate" type="date" /></label>
+        <label id="breedBox">品种<input id="breed" value="测试" /></label>
+        <label>产品 expressTypeId<input id="expressTypeId" value="303" /></label>
+      </div>
+      <div class="row">
+        <button type="button" onclick="run('quote')">只估价</button>
+        <button type="button" class="bad" onclick="run('order')">真实下单</button>
+        <button type="button" class="ghost" id="cancelBtn" disabled onclick="cancelWaybill()">取消刚生成的运单</button>
+      </div>
+      <p class="muted">区县填「云龙区」「姑苏区」，不要填「省市区」。估价返回后可改 expressTypeId 再下单。</p>
+    </div>
+
+    <div class="card">
+      <h2 class="result-title" id="resultTitle">尚未请求</h2>
+      <p class="muted" id="resultSub"></p>
+      <pre id="resultBody">点「只估价」看顺丰原文。确认账号能收之后，再点真实下单。</pre>
+    </div>
+  </main>
+  <script>
+    const PRESET = {
+      sender: { name: '测试寄件', phone: '13800001101', province: '江苏省', city: '徐州市', district: '云龙区', detail: '和平路1号' },
+      receiver: { name: '测试收件', phone: '13800001102', province: '江苏省', city: '苏州市', district: '姑苏区', detail: '人民路1号' }
+    }
+    const FIELDS = [
+      ['name', '姓名'],
+      ['phone', '手机'],
+      ['province', '省'],
+      ['city', '市'],
+      ['district', '区县'],
+      ['detail', '详细地址']
+    ]
+    let kind = 'live'
+    let lastSfOrderId = ''
+    let monthlyCard = ''
+
+    function mount(id, values) {
+      document.getElementById(id).innerHTML = FIELDS.map(([key, label]) =>
+        '<label>' + label + '<input data-k="' + key + '" value="' + values[key] + '" /></label>'
+      ).join('')
+    }
+    function readAddr(id) {
+      const out = {}
+      document.querySelectorAll('#' + id + ' input').forEach((el) => { out[el.dataset.k] = el.value.trim() })
+      return out
+    }
+    function setKind(next) {
+      kind = next
+      document.getElementById('modeLive').classList.toggle('on', next === 'live')
+      document.getElementById('modeNormal').classList.toggle('on', next === 'normal')
+      document.getElementById('breedBox').style.display = next === 'live' ? '' : 'none'
+      document.getElementById('weightKg').value = next === 'live' ? '3' : '1'
+      document.getElementById('expressTypeId').value = next === 'live' ? '303' : '2'
+      document.getElementById('cargoHint').textContent = next === 'live'
+        ? '托寄物将写成「活体动物-dog-品种」，与小程序下单一致。'
+        : '托寄物固定为「服装」，用来确认接口和月结是否正常，不会改小程序的活体报文。'
+    }
+    function setCard(next) {
+      monthlyCard = next
+      document.querySelectorAll('#cardModes button').forEach((btn) => {
+        btn.classList.toggle('on', btn.dataset.card === next)
+      })
+      document.getElementById('cardHint').textContent =
+        '本次估价和下单使用月结卡 ' + next + '。小程序下单仍用 .env 默认卡，不受这里切换影响。'
+    }
+    function renderCards(cards, fallback) {
+      const list = (cards || []).filter(Boolean)
+      const box = document.getElementById('cardModes')
+      if (!list.length) {
+        box.innerHTML = ''
+        document.getElementById('cardHint').textContent = '后端没有可切换的月结卡'
+        return
+      }
+      box.innerHTML = list.map((card) =>
+        '<button type="button" class="mode" data-card="' + card + '">' + card + '</button>'
+      ).join('')
+      box.querySelectorAll('button').forEach((btn) => {
+        btn.onclick = () => setCard(btn.dataset.card)
+      })
+      setCard(list.includes(fallback) ? fallback : list[0])
+    }
+    function payload(action) {
+      return {
+        action,
+        monthlyCard,
+        cargoKind: kind,
+        species: 'dog',
+        breed: document.getElementById('breed').value.trim() || '测试',
+        weightKg: Number(document.getElementById('weightKg').value) || 1,
+        pickupDate: document.getElementById('pickupDate').value,
+        expressTypeId: document.getElementById('expressTypeId').value.trim(),
+        sender: readAddr('sender'),
+        receiver: readAddr('receiver'),
+        sfOrderId: lastSfOrderId
+      }
+    }
+    function show(title, sub, body, ok) {
+      const h = document.getElementById('resultTitle')
+      h.textContent = title
+      h.className = 'result-title ' + (ok ? 'ok' : 'fail')
+      document.getElementById('resultSub').textContent = sub || ''
+      document.getElementById('resultBody').textContent = typeof body === 'string' ? body : JSON.stringify(body, null, 2)
+    }
+    async function run(action) {
+      if (action === 'order') {
+        const name = kind === 'live' ? '活体动物' : '服装'
+        if (!confirm('将向顺丰真实下单，月结卡 ' + monthlyCard + '，托寄物是「' + name + '」。成功会生成运单并可能计费。继续？')) return
+      }
+      show('请求中…', '', '', true)
+      const res = await fetch('/debug/sf/lab', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload(action))
+      })
+      const json = await res.json()
+      const data = json.data || {}
+      if (json.code) {
+        const msg = (data.raw && (data.raw.errorMsg || data.raw.apiErrorMsg)) || json.message
+        show(msg || '失败', '这是顺丰原文，不是小程序里的「承运接口异常」。', data.raw || data || json, false)
+        return
+      }
+      if (action === 'quote') {
+        const list = data.productList || []
+        const hit = list.find((p) => String(p.expressType) === String(payload().expressTypeId)) || list[0]
+        if (hit && hit.expressType) document.getElementById('expressTypeId').value = hit.expressType
+        const err = data.business && data.business.errorMsg
+        const used = (data.sent && data.sent.monthlyCard) || monthlyCard
+        show(err || ('估价返回 ' + list.length + ' 个产品'), '月结卡 ' + used + (data.sent ? '，托寄物：' + data.sent.cargoName : ''), data, !err)
+        return
+      }
+      lastSfOrderId = data.sfOrderId || ''
+      document.getElementById('cancelBtn').disabled = !lastSfOrderId
+      show('已出运单 ' + (data.waybillNo || ''), '月结卡 ' + ((data.sent && data.sent.monthlyCard) || monthlyCard) + '。测完请点「取消刚生成的运单」。订单号 ' + (data.sfOrderId || ''), data, true)
+    }
+    async function cancelWaybill() {
+      if (!lastSfOrderId) return
+      if (!confirm('取消顺丰订单 ' + lastSfOrderId + ' ？')) return
+      const res = await fetch('/debug/sf/lab', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel', sfOrderId: lastSfOrderId, monthlyCard })
+      })
+      const json = await res.json()
+      if (json.code) {
+        show(json.message || '取消失败', '', json.data || json, false)
+        return
+      }
+      show('已提交取消', lastSfOrderId, json.data, true)
+      lastSfOrderId = ''
+      document.getElementById('cancelBtn').disabled = true
+    }
+    mount('sender', PRESET.sender)
+    mount('receiver', PRESET.receiver)
+    const day = new Date()
+    day.setDate(day.getDate() + 1)
+    document.getElementById('pickupDate').value = day.toISOString().slice(0, 10)
+    fetch('/debug/sf/status').then((r) => r.json()).then((json) => {
+      const d = json.data || {}
+      renderCards(d.monthlyCards, d.defaultMonthlyCard)
+      document.getElementById('status').textContent =
+        'env=' + (d.env || '?') + '  mock=' + d.mock + '  默认月结=' + (d.defaultMonthlyCard || '未填') + '  默认产品=' + d.expressTypeId
+    }).catch(() => {
+      document.getElementById('status').textContent = '读不到后端，确认 http://127.0.0.1:8787 已启动'
+    })
+  </script>
+</body>
+</html>

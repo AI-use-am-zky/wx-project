@@ -23,6 +23,8 @@ export const config = {
   sfPartnerId: process.env.SF_PARTNER_ID || '',
   sfCheckWord: process.env.SF_CHECKWORD || '',
   sfMonthlyCard: process.env.SF_MONTHLY_CARD || '',
+  /** 测试页可切换的月结卡；小程序下单仍只用 sfMonthlyCard */
+  sfLabMonthlyCards: csv(process.env.SF_LAB_MONTHLY_CARDS),
   /** 逗号分隔，产品推荐里优先选用的 productCode */
   sfPreferredProductCodes: csv(process.env.SF_PREFERRED_PRODUCT_CODES),
   /** 下单默认 expressTypeId（303=专享即日） */

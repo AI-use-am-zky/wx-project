@@ -6,10 +6,11 @@ const { findProvince, indexesFor, cityFromIndex } = require('../../utils/regions
 const { logOp } = require('../../utils/session')
 const { isPickingMedia } = require('../../utils/media-pick')
 const { goBack: leavePage } = require('../../utils/nav')
+const { photoSrc } = require('../../utils/photo')
 
 const STATUS_TEXT = {
   pending_pay: '待支付',
-  paid: '已支付',
+  paid: '待回访',
   sf_submitting: '下单中',
   sf_failed: '待处理',
   booked: '待取件',
@@ -110,7 +111,6 @@ Page({
         this._all = (data.list || []).map((o) => {
           const sender = o.sender || {}
           const receiver = o.receiver || {}
-          const photos = o.petPhotos || []
           return {
             ...o,
             waybill: o.sfWaybillNo || o.id,
@@ -119,7 +119,7 @@ Page({
             when: (o.status === 'signed' ? '签收 ' : '寄出 ') + fmt(o.createdAt),
             who: receiver.name ? '收 ' + receiver.name : '',
             receiverPhone: receiver.phone || '',
-            cover: photos[0] || '',
+            cover: photoSrc((o.petPhotoUrls && o.petPhotoUrls[0]) || ''),
             statusText: STATUS_TEXT[o.status] || o.status,
             statusTone: tone(o.status),
             title: [o.petName, o.breed].filter(Boolean).join(' ')

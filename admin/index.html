@@ -40,6 +40,7 @@
         <div class="row">
           <select id="status">
             <option value="">全部状态</option>
+            <option value="paid">待回访</option>
             <option value="sf_failed">顺丰失败</option>
             <option value="pending_pay">待支付</option>
             <option value="booked">待揽收</option>
@@ -48,8 +49,9 @@
           </select>
           <button onclick="loadOrders()">刷新列表</button>
         </div>
+        <p class="muted">顾客支付后停在「待回访」。先打电话核对寄收件人和宠物信息，确认后再点「向顺丰下上门取件」。支付本身不会出运单。</p>
         <table>
-          <thead><tr><th>ID</th><th>状态</th><th>金额</th><th>运单</th><th></th></tr></thead>
+          <thead><tr><th>ID</th><th>状态</th><th>寄件人</th><th>收件 / 宠物</th><th>金额</th><th>运单</th><th></th></tr></thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
@@ -88,26 +90,62 @@
       document.getElementById('who').textContent = '已登录'
       loadOrders(); loadSettings()
     }
+    const STATUS_LABEL = {
+      pending_pay: '待支付',
+      paid: '待回访',
+      sf_submitting: '正在下顺丰',
+      sf_failed: '顺丰失败',
+      booked: '已约上门',
+      collected: '已揽收',
+      in_transit: '运输中',
+      signed: '已签收',
+      cancel_requested: '取消处理中',
+      cancelled: '已取消',
+      refunded: '已退款',
+      surcharge_pending: '待补差'
+    }
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+    }
+    function who(a) {
+      if (!a) return '未填'
+      return [a.name, a.phone, a.province, a.city, a.district, a.detail].filter(Boolean).join(' ')
+    }
     async function loadOrders() {
       const st = document.getElementById('status').value
       const r = await req('/admin/orders' + (st ? ('?status='+st) : ''))
       const tb = document.getElementById('tbody')
-      tb.innerHTML = (r.data.list||[]).map(o => `<tr>
-        <td>${o.id.slice(0,8)}</td><td>${o.status}</td><td>¥${(o.paidCents/100).toFixed(2)}</td>
-        <td>${o.sfWaybillNo||'-'}</td>
+      tb.innerHTML = (r.data.list||[]).map(o => {
+        const sender = o.sender || {}
+        const receiver = o.receiver || {}
+        return `<tr>
+        <td>${esc(o.id.slice(0,8))}</td>
+        <td>${esc(STATUS_LABEL[o.status] || o.status)}</td>
+        <td>${esc(sender.name)} ${esc(sender.phone)}</td>
+        <td>${esc(receiver.city || '')} ${esc(o.petName || o.breed || '')} ${esc(o.pickupDate || '')}</td>
+        <td>¥${(o.paidCents/100).toFixed(2)}</td>
+        <td>${esc(o.sfWaybillNo||'-')}</td>
         <td><button class="ghost" onclick="openDetail('${o.id}')">详情</button></td>
-      </tr>`).join('')
+      </tr>`
+      }).join('')
     }
     async function openDetail(id) {
       const r = await req('/admin/orders/'+id)
       const o = r.data
       window.__oid = id
+      window.__order = o
+      const canSf = o.status === 'paid' || o.status === 'sf_failed'
+      const sfLabel = o.status === 'sf_failed' ? '再次向顺丰下上门取件' : '已电话回访，向顺丰下上门取件'
       document.getElementById('detail').innerHTML = `
-        <h3>订单 ${id}</h3>
-        <p>状态 <b>${o.status}</b> 运单 ${o.sfWaybillNo||'无'} 错误 ${o.sfError||o.rawSfError||'-'}</p>
-        <pre>${JSON.stringify({sender:o.sender,receiver:o.receiver,pet:o.breed,weight:o.weightKg,pickup:o.pickupDate,lines:o.lines},null,2)}</pre>
+        <h3>订单 ${esc(id)}</h3>
+        <p>状态 <b>${esc(STATUS_LABEL[o.status] || o.status)}</b> 运单 ${esc(o.sfWaybillNo||'无')} 错误 ${esc(o.sfError||o.rawSfError||'-')}</p>
+        <p>下单账号 ${esc(o.userNick || '-')} ${esc(o.userPhone || '未留手机号')}</p>
+        <p><b>寄件（回访这个电话）</b><br>${esc(who(o.sender))}</p>
+        <p><b>收件</b><br>${esc(who(o.receiver))}</p>
+        <p><b>宠物</b> ${esc(o.petName || '未填名')} / ${esc(o.breed || o.species || '')} / ${esc(o.weightKg || '')}kg / 取件日 ${esc(o.pickupDate || '')}</p>
+        <pre>${esc(JSON.stringify({sender:o.sender,receiver:o.receiver,pet:o.breed,weight:o.weightKg,pickup:o.pickupDate,lines:o.lines},null,2))}</pre>
         <div class="row">
-          <button onclick="act('/admin/orders/'+window.__oid+'/sf-retry')">重试顺丰</button>
+          ${canSf ? `<button onclick="submitSf()">${sfLabel}</button>` : ''}
           <input id="wb" placeholder="补运单号" />
           <button onclick="waybill()">保存运单</button>
           <input id="kg" placeholder="实际重量kg" />
@@ -115,6 +153,18 @@
           <button onclick="act('/admin/orders/'+window.__oid+'/refund')">退款</button>
           <button onclick="act('/admin/orders/'+window.__oid+'/mark-signed')">标记签收</button>
         </div>`
+    }
+    async function submitSf() {
+      const o = window.__order || {}
+      const sender = o.sender || {}
+      const msg = '确认已电话回访 ' + (sender.name || '') + ' ' + (sender.phone || '') + ' ？确认后将按当前服务环境向顺丰下上门取件，成功会生成运单并可能计费。'
+      if (!confirm(msg)) return
+      const r = await req('/admin/orders/' + window.__oid + '/sf-retry', { method:'POST', body:'{}' })
+      const d = r.data || {}
+      if (r.code) alert(r.message || '下单失败')
+      else if (d.sfWaybillNo) alert('已出运单 ' + d.sfWaybillNo)
+      else alert(d.sfError || d.rawSfError || '顺丰未出单')
+      openDetail(window.__oid); loadOrders()
     }
     async function act(path) {
       const r = await req(path, { method:'POST', body:'{}' })

@@ -106,7 +106,22 @@ test('happy quote and mock pay', async () => {
     assert.equal(order.code, 0)
     const paid = await json(await fetch(`http://127.0.0.1:${port}/orders/${order.data.orderId}/mock-pay`, { method: 'POST', headers }))
     assert.equal(paid.code, 0)
-    assert.ok(['booked', 'sf_failed'].includes(paid.data.status))
+    assert.equal(paid.data.status, 'paid')
+    assert.equal(paid.data.sfWaybillNo, null)
+    const admin = await json(await fetch(`http://127.0.0.1:${port}/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: config.adminPassword })
+    }))
+    assert.equal(admin.code, 0)
+    const submitted = await json(await fetch(`http://127.0.0.1:${port}/admin/orders/${order.data.orderId}/sf-retry`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + admin.data.token },
+      body: '{}'
+    }))
+    assert.equal(submitted.code, 0)
+    assert.equal(submitted.data.status, 'booked')
+    assert.ok(submitted.data.sfWaybillNo)
   } finally {
     s.close()
   }

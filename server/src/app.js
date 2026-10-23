@@ -31,7 +31,8 @@ import {
   publicQuote,
   createOrder,
   getOrder,
-  markPaidAndSubmitSf,
+  markPaidAwaitConfirm,
+  submitSfPickup,
   cancelOrder,
   applyReweigh,
   paySurcharge,
@@ -96,6 +97,25 @@ function publicUser(user) {
     nickName: user.nick_name || '',
     avatarUrl: user.avatar_url || ''
   }
+}
+
+/** 测试页允许切换的月结卡。默认卡放前面，并去掉空值和重复。 */
+function labMonthlyCards() {
+  const cards = []
+  const push = (value) => {
+    const card = String(value || '').trim()
+    if (/^\d{6,20}$/.test(card) && !cards.includes(card)) cards.push(card)
+  }
+  push(config.sfMonthlyCard)
+  for (const card of config.sfLabMonthlyCards) push(card)
+  return cards
+}
+
+function pickLabMonthlyCard(requested) {
+  const cards = labMonthlyCards()
+  const want = String(requested || '').trim()
+  if (!want) return cards[0] || ''
+  return cards.includes(want) ? want : ''
 }
 
 export function createApp() {
@@ -260,7 +280,7 @@ export function createApp() {
         return
       }
       if (order.status === STATUS.PENDING_PAY) {
-        await markPaidAndSubmitSf({ orderId: order.id, sf, notify })
+        await markPaidAwaitConfirm({ orderId: order.id, notify })
       }
       res.type('text/xml').send(wechat.notifySuccessXml())
     } catch (e) {
@@ -272,7 +292,7 @@ export function createApp() {
   /** 开发联调：小程序 → 本机 → 顺丰产品推荐（校验码不进小程序） */
   app.post('/debug/sf/product-recommend', async (req, res) => {
     if (!config.sfPartnerId || !config.sfCheckWord) {
-      return fail(res, 400, '请在 wx-project/server/.env 填写 SF_PARTNER_ID 与 SF_CHECKWORD 后重启服务')
+      return fail(res, 400, '请在 server/.env 填写 SF_PARTNER_ID 与 SF_CHECKWORD 后重启服务')
     }
     try {
       const client = createSfOpenClient({
@@ -327,6 +347,140 @@ export function createApp() {
       })
     } catch (e) {
       fail(res, 502, e.message || '顺丰下单失败', { code: e.code, raw: e.raw })
+    }
+  })
+
+  /** 网页测试端：活体与普通货物分开打顺丰，不走小程序下单。 */
+  app.get('/debug/sf', (_req, res) => {
+    res.sendFile(path.join(adminDir, 'sf-lab.html'))
+  })
+
+  app.get('/debug/sf/status', (_req, res) => {
+    const cards = labMonthlyCards()
+    ok(res, {
+      mock: config.sfMock,
+      env: config.sfEnv,
+      monthlyCard: Boolean(config.sfMonthlyCard),
+      monthlyCards: cards,
+      defaultMonthlyCard: config.sfMonthlyCard || cards[0] || '',
+      expressTypeId: config.sfExpressTypeId
+    })
+  })
+
+  app.post('/debug/sf/lab', async (req, res) => {
+    if (config.sfMock) return fail(res, 400, '当前 SF_MOCK=true，请改为 false 后重启再测真实顺丰')
+    if (!config.sfPartnerId || !config.sfCheckWord) return fail(res, 400, '请填写 SF_PARTNER_ID / SF_CHECKWORD')
+    const body = req.body || {}
+    const action = body.action === 'order' || body.action === 'cancel' ? body.action : 'quote'
+    const monthlyCard = pickLabMonthlyCard(body.monthlyCard)
+    if (!monthlyCard) return fail(res, 400, '请选择测试名单里的月结卡号')
+    let sent = null
+    const client = createSfOpenClient({
+      partnerId: config.sfPartnerId,
+      checkWord: config.sfCheckWord,
+      env: config.sfEnv,
+      monthlyCard,
+      expressTypeId: config.sfExpressTypeId
+    })
+    try {
+      if (action === 'cancel') {
+        const sfOrderId = String(body.sfOrderId || '').trim()
+        if (!sfOrderId) return fail(res, 400, '缺少顺丰订单号')
+        const result = await client.cancelOrder(sfOrderId)
+        return ok(res, { action, sfOrderId, monthlyCard, raw: result.raw })
+      }
+      const kind = body.cargoKind === 'normal' ? 'normal' : 'live'
+      const sender = body.sender || {}
+      const receiver = body.receiver || {}
+      for (const [who, addr] of [
+        ['寄件', sender],
+        ['收件', receiver]
+      ]) {
+        for (const key of ['name', 'phone', 'province', 'city', 'district', 'detail']) {
+          if (!addr[key] || !String(addr[key]).trim()) return fail(res, 400, `${who}缺少${key}`)
+        }
+        if (String(addr.district).includes('省市区')) return fail(res, 400, `${who}区县请填具体区名，不要填「省市区」`)
+      }
+      const species = String(body.species || 'dog').slice(0, 20)
+      const breed = String(body.breed || '测试').slice(0, 20)
+      const cargo =
+        kind === 'normal'
+          ? { cargoName: '服装', cargoDesc: '服装', cargoUnit: '件', commodityNameList: ['服装'], species: '服装', breed: '' }
+          : {
+              cargoName: ['活体动物', species, breed].filter(Boolean).join('-').slice(0, 60),
+              cargoDesc: '活体动物',
+              cargoUnit: '只',
+              commodityNameList: [`活体动物-${species}`, breed].filter(Boolean),
+              species,
+              breed
+            }
+      const expressTypeId =
+        body.expressTypeId != null && body.expressTypeId !== '' ? Number(body.expressTypeId) : config.sfExpressTypeId
+      sent = {
+        cargoKind: kind,
+        cargoName: cargo.cargoName,
+        cargoDesc: cargo.cargoDesc,
+        cargoUnit: cargo.cargoUnit,
+        expressTypeId,
+        monthlyCard,
+        weightKg: Number(body.weightKg) || 1,
+        pickupDate: body.pickupDate || '',
+        sender,
+        receiver
+      }
+      if (action === 'quote') {
+        const result = await client.productRecommend({
+          sender,
+          receiver,
+          weightKg: sent.weightKg,
+          species: cargo.species,
+          breed: cargo.breed,
+          commodityNameList: cargo.commodityNameList,
+          pickupDate: body.pickupDate
+        })
+        const productList = (result.msgData && result.msgData.productList) || []
+        return ok(res, {
+          action,
+          sent,
+          monthlyCard,
+          env: config.sfEnv,
+          endpoint: client.endpoint,
+          productList,
+          platform: {
+            apiResultCode: result.platform && result.platform.apiResultCode,
+            apiErrorMsg: result.platform && result.platform.apiErrorMsg
+          },
+          business: {
+            success: result.business && result.business.success,
+            errorCode: result.business && result.business.errorCode,
+            errorMsg: result.business && result.business.errorMsg
+          }
+        })
+      }
+      const created = await client.createOrder({
+        orderId: `LAB-${Date.now()}`,
+        sender,
+        receiver,
+        weightKg: sent.weightKg,
+        species: cargo.species,
+        breed: cargo.breed,
+        cargoName: cargo.cargoName,
+        cargoDesc: cargo.cargoDesc,
+        cargoUnit: cargo.cargoUnit,
+        expressTypeId,
+        pickupDate: body.pickupDate
+      })
+      ok(res, {
+        action,
+        sent,
+        monthlyCard,
+        env: config.sfEnv,
+        waybillNo: created.waybillNo,
+        sfOrderId: created.sfOrderId,
+        raw: created.raw
+      })
+    } catch (e) {
+      fail(res, 502, e.message || '顺丰调用失败', { code: e.code, raw: e.raw, sent })
     }
   })
 
@@ -517,7 +671,7 @@ export function createApp() {
       .get(req.params.id, req.user.id)
     if (!o) return fail(res, 404, '订单不存在')
     if (o.status !== STATUS.PENDING_PAY) return fail(res, 400, '订单状态不可支付')
-    await markPaidAndSubmitSf({ orderId: o.id, sf, notify })
+    await markPaidAwaitConfirm({ orderId: o.id, notify })
     ok(res, getOrder(o.id))
   })
 
@@ -673,17 +827,24 @@ export function createApp() {
     if (!o) return fail(res, 404, '订单不存在')
     const hit = dbForResource('order', req.params.id)
     const raw = hit.udb.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id)
-    ok(res, { ...o, rawSfError: raw.sf_error, userId: hit.userId })
+    const user = db.prepare('SELECT phone, nick_name FROM users WHERE id = ?').get(hit.userId)
+    ok(res, {
+      ...o,
+      rawSfError: raw.sf_error,
+      userId: hit.userId,
+      userPhone: (user && user.phone) || '',
+      userNick: (user && user.nick_name) || ''
+    })
   })
 
   app.post('/admin/orders/:id/sf-retry', adminAuth, async (req, res) => {
-    const hit = dbForResource('order', req.params.id)
-    if (!hit) return fail(res, 404, '订单不存在')
-    const raw = hit.udb.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id)
-    if (!raw) return fail(res, 404, '订单不存在')
-    hit.udb.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.PAID, nowIso(), raw.id)
-    await markPaidAndSubmitSf({ orderId: raw.id, sf, notify })
-    ok(res, getOrder(raw.id))
+    try {
+      const order = await submitSfPickup({ orderId: req.params.id, sf, notify })
+      if (!order) return fail(res, 404, '订单不存在')
+      ok(res, order)
+    } catch (e) {
+      fail(res, e.status || 502, e.message)
+    }
   })
 
   app.post('/admin/orders/:id/waybill', adminAuth, (req, res) => {

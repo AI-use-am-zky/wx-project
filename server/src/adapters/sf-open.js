@@ -104,7 +104,10 @@ export function buildProductRecommendMsgData(input, opts = {}) {
     sendTime: fmtSendTime(input.pickupDate),
     weight: Number(input.weightKg) || 1,
     paymentTerms: opts.paymentTerms || '1',
-    commodityNameList: [`活体动物-${species}`, breed].filter(Boolean),
+    commodityNameList:
+      Array.isArray(input.commodityNameList) && input.commodityNameList.length
+        ? input.commodityNameList.map((name) => String(name).slice(0, 60))
+        : [`活体动物-${species}`, breed].filter(Boolean),
     totalNum: 1,
     phoneNumber: sender.phone || receiver.phone || undefined,
     monthlyCard: opts.monthlyCard || undefined,
@@ -121,7 +124,11 @@ export function buildCreateOrderMsgData(input, opts = {}) {
   const receiver = input.receiver || {}
   const species = input.species || '宠物'
   const breed = input.breed || ''
-  const cargoName = [`活体动物`, species, breed].filter(Boolean).join('-').slice(0, 60)
+  const cargoName = (
+    input.cargoName || [`活体动物`, species, breed].filter(Boolean).join('-')
+  ).slice(0, 60)
+  const cargoDesc = String(input.cargoDesc || '活体动物').slice(0, 20)
+  const cargoUnit = String(input.cargoUnit || '只').slice(0, 8)
   const weight = Number(input.weightKg) || 1
   const expressTypeId = Number(
     input.expressTypeId != null ? input.expressTypeId : opts.expressTypeId != null ? opts.expressTypeId : 303
@@ -134,11 +141,11 @@ export function buildCreateOrderMsgData(input, opts = {}) {
       {
         name: cargoName,
         count: 1,
-        unit: '只',
+        unit: cargoUnit,
         weight
       }
     ],
-    cargoDesc: '活体动物',
+    cargoDesc,
     contactInfoList: [
       {
         contactType: 1,

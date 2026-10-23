@@ -24,6 +24,14 @@
         "type": "folder"
       },
       {
+        "value": ".tmp-pdf-preview",
+        "type": "folder"
+      },
+      {
+        "value": "wx-project",
+        "type": "folder"
+      },
+      {
         "value": "README.md",
         "type": "file"
       },

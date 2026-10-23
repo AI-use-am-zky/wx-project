@@ -281,6 +281,21 @@ export function getOrder(id) {
   return decorateOrder(o)
 }
 
+function uploadPath(userId, ref) {
+  if (!ref || typeof ref !== 'string') return ''
+  if (/^https?:\/\//.test(ref)) return ref
+  if (ref.startsWith('/uploads/')) return ref
+  if (ref.startsWith('local')) return ''
+  if (!userId) return ''
+  const row = getUserDb(userId).prepare('SELECT filename FROM uploads WHERE id = ?').get(ref)
+  if (!row || !/^[\w.-]+$/.test(row.filename || '')) return ''
+  return '/uploads/' + row.filename
+}
+
+function uploadPaths(userId, list) {
+  return (Array.isArray(list) ? list : []).map((id) => uploadPath(userId, id)).filter(Boolean)
+}
+
 function decorateOrder(o) {
   const payload = JSON.parse(o.payload_json)
   return {
@@ -302,20 +317,57 @@ function decorateOrder(o) {
     createdAt: o.created_at,
     updatedAt: o.updated_at,
     ...payload,
+    petPhotoUrls: uploadPaths(o.user_id, payload.petPhotos),
+    cratePhotoUrls: uploadPaths(o.user_id, payload.cratePhotos),
+    quarantinePhotoUrls: uploadPaths(o.user_id, payload.quarantinePhotos),
     timeline: getEvents(o.id)
   }
 }
 
-export async function markPaidAndSubmitSf({ orderId, sf, notify }) {
+function contactSummary(payload) {
+  const sender = payload.sender || {}
+  const receiver = payload.receiver || {}
+  return [
+    `寄件 ${sender.name || ''} ${sender.phone || ''}`.trim(),
+    `收件 ${receiver.name || ''} ${receiver.phone || ''}`.trim(),
+    `${payload.petName || payload.breed || payload.species || ''} ${payload.weightKg || ''}kg`.trim(),
+    `取件日 ${payload.pickupDate || ''}`
+  ].join('，')
+}
+
+/** 支付成功后只记下顾客信息，等客服电话回访。此时不向顺丰下单。 */
+export async function markPaidAwaitConfirm({ orderId, notify }) {
   const udb = udbOfOrder(orderId)
-  if (!udb) return
+  if (!udb) return null
   const o = udb.prepare('SELECT * FROM orders WHERE id = ?').get(orderId)
-  if (!o) return
-  if (o.status !== STATUS.PENDING_PAY && o.status !== STATUS.PAID) return
+  if (!o || o.status !== STATUS.PENDING_PAY) return getOrder(orderId)
+  const payload = JSON.parse(o.payload_json)
+  udb.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.PAID, nowIso(), orderId)
+  addEvent(orderId, 'paid', '支付成功。客服将电话回访确认寄收件信息，确认后再向顺丰预约上门取件')
+  const summary = '待电话回访。' + contactSummary(payload)
+  if (notify) notify.send('order.await_confirm', { orderId, summary })
+  return getOrder(orderId)
+}
+
+/** 客服回访确认后，由管理端调用，向顺丰下上门取件。 */
+export async function submitSfPickup({ orderId, sf, notify }) {
+  const udb = udbOfOrder(orderId)
+  if (!udb) return null
+  const o = udb.prepare('SELECT * FROM orders WHERE id = ?').get(orderId)
+  if (!o) return null
+  if (o.sf_waybill_no) {
+    const err = new Error('已有运单，请勿重复向顺丰下单')
+    err.status = 400
+    throw err
+  }
+  if (o.status !== STATUS.PAID && o.status !== STATUS.SF_FAILED) {
+    const err = new Error('需支付完成并电话回访后，再向顺丰下上门取件')
+    err.status = 400
+    throw err
+  }
   const payload = JSON.parse(o.payload_json)
   udb.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.SF_SUBMITTING, nowIso(), orderId)
-  addEvent(orderId, 'paid', '支付成功')
-  notify.send('order.paid', { orderId, summary: '新单已支付' })
+  addEvent(orderId, 'sf_submit', '回访已确认，正在向顺丰预约上门取件')
   try {
     const created = await sf.createOrder({
       orderId,
@@ -341,8 +393,9 @@ export async function markPaidAndSubmitSf({ orderId, sf, notify }) {
       orderId
     )
     addEvent(orderId, 'sf_fail', '顺丰下单失败，已转人工处理，不会自动退款')
-    notify.send('order.sf_failed', { orderId, summary: e.message || '下单失败' })
+    if (notify) notify.send('order.sf_failed', { orderId, summary: e.message || '下单失败' })
   }
+  return getOrder(orderId)
 }
 
 export async function cancelOrder({ order, sf, wechat }) {

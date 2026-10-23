@@ -6,7 +6,7 @@ const STATUS_TEXT = {
   in_transit: '运输中',
   booked: '待取件',
   collected: '已揽收',
-  paid: '已支付',
+  paid: '待回访',
   surcharge_pending: '待补差'
 }
 Page({

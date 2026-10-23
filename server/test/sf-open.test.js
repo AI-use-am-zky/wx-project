@@ -117,6 +117,27 @@ test('buildCreateOrderMsgData builds BSP create-order payload', () => {
   assert.equal(msg.serviceList[0].name, 'INSURE')
   assert.equal(msg.serviceList[0].value, '3000')
   assert.ok(msg.cargoDetails[0].name.includes('活体动物'))
+  assert.equal(msg.cargoDesc, '活体动物')
+  assert.equal(msg.cargoDetails[0].unit, '只')
+})
+
+test('buildCreateOrderMsgData keeps normal cargo when cargoName is set', () => {
+  const msg = buildCreateOrderMsgData(
+    {
+      orderId: 'lab-1',
+      cargoName: '服装',
+      cargoDesc: '服装',
+      cargoUnit: '件',
+      sender: { name: '甲', phone: '13800001101', province: '江苏省', city: '徐州市', district: '云龙区', detail: '和平路1号' },
+      receiver: { name: '乙', phone: '13800001102', province: '江苏省', city: '苏州市', district: '姑苏区', detail: '人民路1号' },
+      weightKg: 1
+    },
+    { expressTypeId: 2 }
+  )
+  assert.equal(msg.cargoDetails[0].name, '服装')
+  assert.equal(msg.cargoDesc, '服装')
+  assert.equal(msg.cargoDetails[0].unit, '件')
+  assert.equal(msg.expressTypeId, 2)
 })
 
 test('extractWaybillNo prefers mother waybill', () => {
