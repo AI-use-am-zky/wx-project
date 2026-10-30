@@ -8,18 +8,6 @@
 | **UI 演示（高保真原型）** | https://ai-use-am-zky.github.io/wx-project/ （也可直达 `/2-design/`） |
 | **技术栈** | 微信小程序 · Node.js / Express · SQLite · 微信登录/支付 · 顺丰开放平台 |
 
-### 简历可写要点
-
-- 独立完成小程序端与 Node 后端：登录态、地址簿、询价下单、支付与订单状态机
-- 对接微信 `code2Session` 登录与支付能力；顺丰 T11 询价/下单（可沙箱/生产切换）
-- 按用户隔离 SQLite 业务库；管理端支持运单与联调
-- 提供可点击的高保真 HTML 原型（`2-design/`）便于演示交互
-
-产品共识与实现规格见 `docs/`（副本）及 AI-DOC 仓库中的 `wx_appmake.md` / `wx_appmake.spec.md`。
-
-小程序根目录就是本仓库根目录（微信开发者工具直接打开本目录）。后端与管理端在子目录，已写入 `packOptions.ignore`，不会打进小程序包。
-
----
 
 ## Git 排除项（不进仓库）
 
