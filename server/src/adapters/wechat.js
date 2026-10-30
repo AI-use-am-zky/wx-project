@@ -118,7 +118,10 @@ export function createWechat() {
       )
       const data = await res.json()
       if (data.errcode && data.errcode !== 0) {
-        const err = new Error(data.errmsg || '获取手机号失败')
+        let message = data.errmsg || '获取手机号失败'
+        if (data.errcode === 40029) message = '手机号凭证无效，请再点一次允许'
+        if (data.errcode === 40013) message = '小程序 AppID 与后台不一致'
+        const err = new Error(message)
         err.data = data
         throw err
       }
@@ -157,7 +160,7 @@ export function createWechat() {
         appid: config.wxAppId,
         mch_id: config.wxMchId,
         nonce_str: nonceStr,
-        body: String(description || '宠途空运').slice(0, 127),
+        body: String(description || '航宠通').slice(0, 127),
         out_trade_no: outTradeNo,
         total_fee: String(Math.round(Number(totalFee) || 0)),
         spbill_create_ip: config.wxPayClientIp || '127.0.0.1',

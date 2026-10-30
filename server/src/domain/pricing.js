@@ -13,6 +13,24 @@ export function priceFromSfCost(sfCostCents, markupRate, minServiceFeeCents) {
   }
 }
 
+/** VIP 统一折扣打在顾客运费上。成本不变，服务费改成折后运费减成本。 */
+export function applyVipDiscount(priced, discountRate) {
+  const rate = Number(discountRate)
+  if (!(rate > 0) || rate >= 1) {
+    return { ...priced, vip: false, vipDiscountRate: 0 }
+  }
+  const sell = Math.max(0, Math.round(Number(priced.sellFreightCents) * (1 - rate)))
+  const cost = priced.sfCostCents == null ? null : Math.round(Number(priced.sfCostCents) || 0)
+  return {
+    ...priced,
+    sellFreightCents: sell,
+    serviceFeeCents: cost == null ? 0 : sell - cost,
+    totalCents: sell,
+    vip: true,
+    vipDiscountRate: rate
+  }
+}
+
 /** 询价失败：价表已是含服务费的卖价，服务费行 0 */
 export function priceFromRateCard(rateCardSellCents) {
   const sell = Math.max(0, Math.round(Number(rateCardSellCents) || 0))

@@ -1,4 +1,4 @@
 {
-  "desc": "宠途空运 sitemap",
+  "desc": "航宠通 sitemap",
   "rules": [{ "action": "allow", "page": "*" }]
 }

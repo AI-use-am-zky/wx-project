@@ -28,12 +28,11 @@
     </view>
   </view>
 
-  <button class="btn btn-ghost phone-btn" open-type="getPhoneNumber" bindgetphonenumber="onPhone" wx:if="{{needPhone}}">授权手机号（下单必填）</button>
-  <view class="card" wx:elif="{{phoneMasked}}">
+  <view class="card" wx:if="{{phoneMasked}}">
     <view class="row-plain">
       <view>
         <view class="h2" style="font-size:30rpx">账号手机号</view>
-        <view class="faint">{{phoneMasked}}{{payMock || wxMockLogin ? ' · 演示已自动绑定' : ''}}</view>
+        <view class="faint">{{phoneMasked}}</view>
       </view>
       <text class="chip">已绑</text>
     </view>

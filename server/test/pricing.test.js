@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { priceFromSfCost, priceFromRateCard, surchargeFromReweigh, refundAmount } from '../src/domain/pricing.js'
+import { priceFromSfCost, priceFromRateCard, applyVipDiscount, surchargeFromReweigh, refundAmount } from '../src/domain/pricing.js'
 import { canIssueInvoice, isCollectedOrAfter } from '../src/domain/order-machine.js'
 
 test('sf markup uses max of percent and min fee', () => {
@@ -15,6 +15,18 @@ test('rate card sell price has zero service line', () => {
   assert.equal(p.serviceFeeCents, 0)
   assert.equal(p.totalCents, 88000)
   assert.equal(p.quoteSource, 'rate_card')
+})
+
+test('vip discount reduces customer freight and keeps sf cost', () => {
+  const base = priceFromSfCost(100000, 0.15, 15000)
+  const vip = applyVipDiscount(base, 0.1)
+  assert.equal(vip.vip, true)
+  assert.equal(vip.sfCostCents, 100000)
+  assert.equal(vip.sellFreightCents, 103500)
+  assert.equal(vip.serviceFeeCents, 3500)
+  const plain = applyVipDiscount(base, 0)
+  assert.equal(plain.vip, false)
+  assert.equal(plain.sellFreightCents, 115000)
 })
 
 test('reweigh ignores 0.9kg', () => {

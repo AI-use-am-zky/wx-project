@@ -4,7 +4,7 @@ const { photoSrc } = require('../../utils/photo')
 
 const STATUS_TEXT = {
   pending_pay: '待支付',
-  paid: '待回访',
+  paid: '下单成功',
   sf_submitting: '正在向承运方下单',
   sf_failed: '下单失败，人工处理中',
   booked: '已预约上门',
@@ -21,7 +21,10 @@ Page({
   data: { order: {}, canCancel: false, headline: '', heroDesc: '', cover: '' },
   onLoad(q) {
     this.id = q.id
-    requireLoginPage().then(() => this.load())
+  },
+  onShow() {
+    if (!this.id) return
+    requireLoginPage().then(() => this.load()).catch(() => {})
   },
   load() {
     request({ url: '/orders/' + this.id })
@@ -31,7 +34,7 @@ Page({
         const toCity = (o.receiver && o.receiver.city) || '目的地'
         const headlines = {
           pending_pay: '待支付本单',
-          paid: '已支付，等待电话回访',
+          paid: '下单成功',
           sf_submitting: '正在向承运方下单',
           sf_failed: '下单失败，人工处理中',
           booked: name + '待上门取件',
@@ -44,8 +47,9 @@ Page({
           cancel_requested: '取消处理中'
         }
         const descs = {
-          pending_pay: '支付给本服务商。支付后客服电话回访，确认后再安排顺丰上门取件。',
-          paid: '请保持手机畅通。客服会电话确认寄件人、收件人和宠物信息，确认后才会向顺丰预约上门取件。',
+          pending_pay: '支付给本服务商。支付成功即视为下单成功，此时不会向顺丰出运单。',
+          paid: '下单已成功。我们会电话确认信息。运单号录入后，可在本页查看物流路径。',
+          booked: '运单已录入。下方显示顺丰返回的物流路径。',
           sf_failed: '回访后向顺丰下单未成功，客服会继续处理，无需重复支付。',
           in_transit: '航班运输中，到达后将上门派送。可复制运单号向承运方查询路由。',
           signed: '收件人已签收，可申请电子发票。',

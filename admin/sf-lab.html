@@ -45,7 +45,13 @@
           <button type="button" class="mode" id="modeNormal" onclick="setKind('normal')">普通货物</button>
         </div>
       </div>
-      <p class="muted" id="cargoHint">托寄物将写成「活体动物-dog-测试」，与小程序下单一致。</p>
+      <div class="row" id="animalRow">
+        <div class="modes">
+          <button type="button" class="mode on" id="modeDog" onclick="setAnimal('dog')">商品狗</button>
+          <button type="button" class="mode" id="modeCat" onclick="setAnimal('cat')">商品猫</button>
+        </div>
+      </div>
+      <p class="muted" id="cargoHint">托寄物名称将写成「商品狗」，说明写「狗」。与小程序下单一致。</p>
       <div class="row">
         <div class="modes" id="cardModes"></div>
       </div>
@@ -91,6 +97,7 @@
       ['detail', '详细地址']
     ]
     let kind = 'live'
+    let animal = 'dog'
     let lastSfOrderId = ''
     let monthlyCard = ''
 
@@ -104,6 +111,22 @@
       document.querySelectorAll('#' + id + ' input').forEach((el) => { out[el.dataset.k] = el.value.trim() })
       return out
     }
+    function cargoTitle() {
+      return animal === 'cat' ? '商品猫' : '商品狗'
+    }
+    function refreshHint() {
+      const live = kind === 'live'
+      document.getElementById('animalRow').style.display = live ? '' : 'none'
+      document.getElementById('cargoHint').textContent = live
+        ? '托寄物名称将写成「' + cargoTitle() + '」，说明写「' + (animal === 'cat' ? '猫' : '狗') + '」。与小程序下单一致。'
+        : '托寄物固定为「服装」，用来确认接口和月结是否正常，不会改小程序的猫狗报文。'
+    }
+    function setAnimal(next) {
+      animal = next === 'cat' ? 'cat' : 'dog'
+      document.getElementById('modeDog').classList.toggle('on', animal === 'dog')
+      document.getElementById('modeCat').classList.toggle('on', animal === 'cat')
+      refreshHint()
+    }
     function setKind(next) {
       kind = next
       document.getElementById('modeLive').classList.toggle('on', next === 'live')
@@ -111,9 +134,7 @@
       document.getElementById('breedBox').style.display = next === 'live' ? '' : 'none'
       document.getElementById('weightKg').value = next === 'live' ? '3' : '1'
       document.getElementById('expressTypeId').value = next === 'live' ? '303' : '2'
-      document.getElementById('cargoHint').textContent = next === 'live'
-        ? '托寄物将写成「活体动物-dog-品种」，与小程序下单一致。'
-        : '托寄物固定为「服装」，用来确认接口和月结是否正常，不会改小程序的活体报文。'
+      refreshHint()
     }
     function setCard(next) {
       monthlyCard = next
@@ -144,7 +165,7 @@
         action,
         monthlyCard,
         cargoKind: kind,
-        species: 'dog',
+        species: animal,
         breed: document.getElementById('breed').value.trim() || '测试',
         weightKg: Number(document.getElementById('weightKg').value) || 1,
         pickupDate: document.getElementById('pickupDate').value,
@@ -163,7 +184,7 @@
     }
     async function run(action) {
       if (action === 'order') {
-        const name = kind === 'live' ? '活体动物' : '服装'
+        const name = kind === 'live' ? cargoTitle() : '服装'
         if (!confirm('将向顺丰真实下单，月结卡 ' + monthlyCard + '，托寄物是「' + name + '」。成功会生成运单并可能计费。继续？')) return
       }
       show('请求中…', '', '', true)

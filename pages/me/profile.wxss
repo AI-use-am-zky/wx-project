@@ -4,9 +4,6 @@
 .mt-8 { margin-top: 16rpx; }
 .form { margin-top: 8rpx; }
 .avatar-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   background: transparent;
   border: none;
   padding: 24rpx 0 8rpx;

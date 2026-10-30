@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import crypto from 'crypto'
 import path from 'path'
 import fs from 'fs'
 import os from 'os'
@@ -22,7 +23,7 @@ import {
 } from './db.js'
 import { ok, fail, validAddress, BREEDS } from './http.js'
 import { createMockSf } from './adapters/sf-mock.js'
-import { createSf, createSfOpenClient } from './adapters/sf-open.js'
+import { createSf, createSfOpenClient, petCargoName, petCargoWord } from './adapters/sf-open.js'
 import { createWechat } from './adapters/wechat.js'
 import { createNotify } from './adapters/notify.js'
 import { createInvoiceAdapter } from './adapters/invoice.js'
@@ -33,6 +34,7 @@ import {
   getOrder,
   markPaidAwaitConfirm,
   submitSfPickup,
+  attachWaybill,
   cancelOrder,
   applyReweigh,
   paySurcharge,
@@ -41,9 +43,6 @@ import {
 } from './service.js'
 import { STATUS } from './domain/order-machine.js'
 import {
-  ensureDemoOrders,
-  listDemoOrders,
-  getDemoOrder,
   getBadges,
   markBadgeSeen,
   logOperation,
@@ -70,6 +69,42 @@ function auth(req, res, next) {
   req.user = db.prepare('SELECT * FROM users WHERE id = ?').get(row.user_id)
   if (!req.user) return fail(res, 401, '用户不存在')
   next()
+}
+
+function hashAdminPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex')
+  const hash = crypto.scryptSync(String(password), salt, 32).toString('hex')
+  return salt + ':' + hash
+}
+
+function adminPasswordMatches(password) {
+  const stored = getSetting('admin_password_hash')
+  if (stored) {
+    const [salt, hash] = String(stored).split(':')
+    if (!salt || !hash) return false
+    const got = crypto.scryptSync(String(password), salt, 32)
+    const expect = Buffer.from(hash, 'hex')
+    if (expect.length !== got.length) return false
+    return crypto.timingSafeEqual(expect, got)
+  }
+  return String(password) === config.adminPassword
+}
+
+function withAdminQuote(userId, order) {
+  if (!order || !userId) return order
+  const row = getUserDb(userId).prepare('SELECT quote_id FROM orders WHERE id = ?').get(order.id)
+  if (!row || !row.quote_id) return order
+  const quote = getUserDb(userId)
+    .prepare('SELECT sf_cost_cents, sell_freight_cents, service_fee_cents, quote_source FROM quotes WHERE id = ?')
+    .get(row.quote_id)
+  if (!quote) return order
+  return {
+    ...order,
+    sfCostCents: quote.sf_cost_cents,
+    sellFreightCents: quote.sell_freight_cents,
+    serviceFeeCents: quote.service_fee_cents,
+    quoteSource: quote.quote_source
+  }
 }
 
 function adminAuth(req, res, next) {
@@ -118,6 +153,13 @@ function pickLabMonthlyCard(requested) {
   return cards.includes(want) ? want : ''
 }
 
+/** 开发者工具模拟号只接受本机直连。经 Nginx 进来的请求一律要真实手机号。 */
+function isDirectLocal(req) {
+  if (req.headers['x-forwarded-for'] || req.headers['x-real-ip']) return false
+  const ip = (req.socket && req.socket.remoteAddress) || ''
+  return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1'
+}
+
 export function createApp() {
   const sf = createSf({
     mock: config.sfMock,
@@ -153,9 +195,13 @@ export function createApp() {
 
   app.post('/auth/wx-login', async (req, res) => {
     try {
-      const { code } = req.body || {}
+      const code = String((req.body && req.body.code) || '')
+      const phoneCode = String((req.body && req.body.phoneCode) || '')
+      const devtools =
+        Boolean(req.body && req.body.devtools) && config.allowDevtoolsLogin && isDirectLocal(req)
       if (!code) return fail(res, 400, '缺少 code')
-      // 官方：code → openid + session_key（session_key 只留服务端）
+      if (!phoneCode && !config.wxMockLogin && !devtools) return fail(res, 400, '需要授权手机号')
+
       const sess = await wechat.code2session(code)
       let user = db.prepare('SELECT * FROM users WHERE openid = ?').get(sess.openid)
       if (!user) {
@@ -172,11 +218,26 @@ export function createApp() {
         )
         user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id)
       }
+
+      let phone = user.phone || ''
+      if (phoneCode || config.wxMockLogin) {
+        const result = await wechat.decryptPhone(phoneCode)
+        phone = (result && result.phone) || ''
+      } else if (devtools) {
+        phone = phone || config.devtoolsPhone
+      }
+      if (!phone) return fail(res, 400, '需要授权手机号')
+      if (phone !== user.phone) {
+        db.prepare('UPDATE users SET phone = ? WHERE id = ?').run(phone, user.id)
+        user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id)
+        syncUserProfile(user)
+      }
+      user = { ...user, phone }
+
       const token = uuid()
       db.prepare('INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)').run(token, user.id, nowIso())
       // 每位用户独立业务库：data/users/{userId}.sqlite
       const userDb = ensureUserDb(user.id)
-      ensureDemoOrders(user.id)
       logOperation({
         userId: user.id,
         type: 'login',
@@ -186,13 +247,13 @@ export function createApp() {
       ok(res, {
         token,
         user: publicUser(user),
-        needPhone: !user.phone,
+        needPhone: false,
         needProfile: !(user.nick_name && user.avatar_url),
         dbPath: userDb.path
       })
     } catch (e) {
       console.error('[wx-login]', e.message, e.data || '')
-      fail(res, 500, e.message || '微信登录失败', e.data || null)
+      fail(res, 500, e.message || '登录失败', e.data || null)
     }
   })
 
@@ -228,7 +289,7 @@ export function createApp() {
     try {
       const { code, phone } = req.body || {}
       if (!config.wxMockLogin && phone && !code) {
-        return fail(res, 400, '请使用微信手机号授权')
+        return fail(res, 400, '请使用手机号授权')
       }
       const result = await wechat.decryptPhone(code, phone)
       if (!result.phone) return fail(res, 400, '无法获取手机号')
@@ -254,7 +315,7 @@ export function createApp() {
   app.get('/meta/settings', (_req, res) => {
     ok(res, {
       agreementVersion: getSetting('transport_agreement_version'),
-      brandName: '宠途空运',
+      brandName: '航宠通',
       payMock: config.payMock || !config.wxMchId || !config.wxPayKey,
       wxMockLogin: config.wxMockLogin || !config.wxAppSecret
     })
@@ -407,10 +468,10 @@ export function createApp() {
         kind === 'normal'
           ? { cargoName: '服装', cargoDesc: '服装', cargoUnit: '件', commodityNameList: ['服装'], species: '服装', breed: '' }
           : {
-              cargoName: ['活体动物', species, breed].filter(Boolean).join('-').slice(0, 60),
-              cargoDesc: '活体动物',
+              cargoName: petCargoName(species, breed),
+              cargoDesc: petCargoWord(species),
               cargoUnit: '只',
-              commodityNameList: [`活体动物-${species}`, breed].filter(Boolean),
+              commodityNameList: [petCargoName(species)],
               species,
               breed
             }
@@ -561,14 +622,12 @@ export function createApp() {
   })
 
   app.get('/session/badges', auth, (req, res) => {
-    ensureDemoOrders(req.user.id)
     ok(res, getBadges(req.user.id))
   })
 
   app.post('/session/badges/seen', auth, (req, res) => {
     const tab = (req.body || {}).tab
     if (!tab) return fail(res, 400, '缺少 tab')
-    ensureDemoOrders(req.user.id)
     ok(res, markBadgeSeen(req.user.id, tab))
   })
 
@@ -676,12 +735,10 @@ export function createApp() {
   })
 
   app.get('/orders', auth, (req, res) => {
-    ensureDemoOrders(req.user.id)
-    const demo = listDemoOrders(req.user.id)
     const rows = getUserDb(req.user.id)
       .prepare('SELECT id FROM orders WHERE user_id = ? ORDER BY created_at DESC')
       .all(req.user.id)
-    ok(res, { list: [...demo, ...rows.map((r) => getOrder(r.id))] })
+    ok(res, { list: rows.map((r) => getOrder(r.id)) })
   })
 
   app.get('/pets', auth, (req, res) => {
@@ -744,11 +801,19 @@ export function createApp() {
     ok(res, { ok: true })
   })
 
-  app.get('/orders/:id', auth, (req, res) => {
-    const demo = getDemoOrder(req.params.id, req.user.id)
-    if (demo) return ok(res, demo)
+  app.get('/orders/:id', auth, async (req, res) => {
     if (ownerOf('order', req.params.id) !== req.user.id) return fail(res, 404, '订单不存在')
-    ok(res, getOrder(req.params.id))
+    const order = getOrder(req.params.id)
+    let routes = []
+    if (order && order.sfWaybillNo) {
+      try {
+        routes = await sf.queryRoutes(order.sfWaybillNo)
+      } catch (e) {
+        routes = []
+        order.routesError = e.message || '暂时查不到物流路径'
+      }
+    }
+    ok(res, { ...order, routes })
   })
 
   app.post('/orders/:id/cancel', auth, async (req, res) => {
@@ -794,16 +859,34 @@ export function createApp() {
   })
 
   app.post('/admin/login', (req, res) => {
-    if ((req.body || {}).password !== config.adminPassword) return fail(res, 401, '密码错误')
+    const body = req.body || {}
+    const username = String(body.username || '').trim()
+    const password = String(body.password || '')
+    if (username !== config.adminUser || !adminPasswordMatches(password)) {
+      return fail(res, 401, '账号或密码错误')
+    }
     const token = uuid()
     db.prepare('INSERT INTO admin_sessions (token, created_at) VALUES (?, ?)').run(token, nowIso())
-    ok(res, { token })
+    ok(res, { token, username })
   })
 
   app.get('/admin/orders', adminAuth, (req, res) => {
     const status = req.query.status
     const rows = listOrderIndex(status || null)
-    ok(res, { list: rows.map((r) => getOrder(r.id)).filter(Boolean) })
+    const list = rows
+      .map((r) => {
+        const order = getOrder(r.id)
+        if (!order) return null
+        const user = db.prepare('SELECT phone, nick_name FROM users WHERE id = ?').get(r.user_id)
+        return withAdminQuote(r.user_id, {
+          ...order,
+          userId: r.user_id,
+          userPhone: (user && user.phone) || '',
+          userNick: (user && user.nick_name) || ''
+        })
+      })
+      .filter(Boolean)
+    ok(res, { list })
   })
 
   app.get('/admin/users', adminAuth, (_req, res) => {
@@ -828,13 +911,13 @@ export function createApp() {
     const hit = dbForResource('order', req.params.id)
     const raw = hit.udb.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id)
     const user = db.prepare('SELECT phone, nick_name FROM users WHERE id = ?').get(hit.userId)
-    ok(res, {
+    ok(res, withAdminQuote(hit.userId, {
       ...o,
       rawSfError: raw.sf_error,
       userId: hit.userId,
       userPhone: (user && user.phone) || '',
       userNick: (user && user.nick_name) || ''
-    })
+    }))
   })
 
   app.post('/admin/orders/:id/sf-retry', adminAuth, async (req, res) => {
@@ -848,15 +931,14 @@ export function createApp() {
   })
 
   app.post('/admin/orders/:id/waybill', adminAuth, (req, res) => {
-    const hit = dbForResource('order', req.params.id)
-    if (!hit) return fail(res, 404, '订单不存在')
-    const { waybillNo, sfOrderId } = req.body || {}
-    hit.udb
-      .prepare(
-        'UPDATE orders SET sf_waybill_no = ?, sf_order_id = ?, status = ?, sf_error = NULL, updated_at = ? WHERE id = ?'
-      )
-      .run(waybillNo, sfOrderId || waybillNo, STATUS.BOOKED, nowIso(), req.params.id)
-    ok(res, getOrder(req.params.id))
+    try {
+      const { waybillNo, sfOrderId } = req.body || {}
+      const order = attachWaybill({ orderId: req.params.id, waybillNo, sfOrderId })
+      if (!order) return fail(res, 404, '订单不存在')
+      ok(res, order)
+    } catch (e) {
+      fail(res, e.status || 500, e.message)
+    }
   })
 
   app.post('/admin/orders/:id/reweigh', adminAuth, (req, res) => {
@@ -895,13 +977,76 @@ export function createApp() {
     ok(res, getOrder(req.params.id))
   })
 
-  app.get('/admin/settings', adminAuth, (_req, res) => ok(res, settingsMap()))
+  app.post('/admin/password', (req, res) => {
+    const body = req.body || {}
+    const current = String(body.currentPassword || '')
+    const next = String(body.newPassword || '')
+    if (!adminPasswordMatches(current)) return fail(res, 400, '当前密码不正确')
+    if (next.length < 6) return fail(res, 400, '新密码至少 6 位')
+    if (next === current) return fail(res, 400, '新密码不能和当前密码相同')
+    db.prepare(
+      'INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
+    ).run('admin_password_hash', hashAdminPassword(next))
+    db.prepare('DELETE FROM admin_sessions').run()
+    ok(res, { ok: true })
+  })
+
+  function normalizeVipPhone(value) {
+    const digits = String(value || '').replace(/\D/g, '')
+    if (digits.length === 13 && digits.startsWith('86')) return digits.slice(2)
+    return digits
+  }
+
+  app.get('/admin/vips', adminAuth, (_req, res) => {
+    const list = db.prepare('SELECT phone, name, created_at FROM vip_accounts ORDER BY created_at DESC').all()
+    ok(res, {
+      discountRate: Number(getSetting('vip_discount_rate')) || 0,
+      list: list.map((row) => ({
+        phone: row.phone,
+        name: row.name || '',
+        createdAt: row.created_at
+      }))
+    })
+  })
+
+  app.post('/admin/vips', adminAuth, (req, res) => {
+    const phone = normalizeVipPhone((req.body || {}).phone)
+    const name = String((req.body || {}).name || '').trim().slice(0, 32)
+    if (!/^1\d{10}$/.test(phone)) return fail(res, 400, '请填写 11 位手机号')
+    db.prepare(
+      `INSERT INTO vip_accounts (phone, name, created_at) VALUES (?, ?, ?)
+       ON CONFLICT(phone) DO UPDATE SET name = excluded.name`
+    ).run(phone, name, nowIso())
+    ok(res, { phone, name })
+  })
+
+  app.delete('/admin/vips/:phone', adminAuth, (req, res) => {
+    const phone = normalizeVipPhone(req.params.phone)
+    const changed = db.prepare('DELETE FROM vip_accounts WHERE phone = ?').run(phone)
+    if (!changed.changes) return fail(res, 404, '这个手机号不是 VIP')
+    ok(res, { phone })
+  })
+
+  app.get('/admin/settings', adminAuth, (_req, res) => {
+    const data = settingsMap()
+    delete data.admin_password_hash
+    ok(res, data)
+  })
 
   app.put('/admin/settings', adminAuth, (req, res) => {
     const body = req.body || {}
     const up = db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value')
-    for (const [k, v] of Object.entries(body)) up.run(k, String(v))
-    ok(res, settingsMap())
+    for (const [k, v] of Object.entries(body)) {
+      if (k === 'admin_password_hash') continue
+      if (k === 'vip_discount_rate') {
+        const rate = Number(v)
+        if (!(rate >= 0 && rate < 1)) return fail(res, 400, 'VIP 折扣请填 0 到 99 之间的百分数')
+      }
+      up.run(k, String(v))
+    }
+    const data = settingsMap()
+    delete data.admin_password_hash
+    ok(res, data)
   })
 
   app.use((err, _req, res, _next) => {

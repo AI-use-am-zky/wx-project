@@ -78,6 +78,27 @@ function fullAddress(addr) {
   return [addr.province, addr.city, addr.district, addr.detail].filter(Boolean).join('')
 }
 
+/** 下单的 address 只放街道。省市区已有独立字段，再拼进 address 会被顺丰判成双重目的地（20064）。 */
+function streetAddress(addr) {
+  if (!addr) return ''
+  const detail = String(addr.detail || '').trim()
+  return detail || fullAddress(addr)
+}
+
+/** 顺丰拒收「活体动物」。托寄物说明只写猫或狗。 */
+export function petCargoWord(species) {
+  const raw = String(species || '').trim()
+  const lower = raw.toLowerCase()
+  if (lower === 'cat' || raw.includes('猫')) return '猫'
+  if (raw.includes('兔') || lower === 'other') return '兔'
+  return '狗'
+}
+
+/** 托寄物名称只写商品狗或商品猫，不带品种。 */
+export function petCargoName(species) {
+  return `商品${petCargoWord(species)}`.slice(0, 60)
+}
+
 function fmtSendTime(pickupDate) {
   if (pickupDate && /^\d{4}-\d{2}-\d{2}$/.test(pickupDate)) {
     return `${pickupDate} 10:00:00`
@@ -90,8 +111,7 @@ function fmtSendTime(pickupDate) {
 export function buildProductRecommendMsgData(input, opts = {}) {
   const sender = input.sender || {}
   const receiver = input.receiver || {}
-  const species = input.species || '宠物'
-  const breed = input.breed || ''
+  const species = input.species || 'dog'
   const msg = {
     srcProvince: sender.province,
     srcCity: sender.city,
@@ -107,7 +127,7 @@ export function buildProductRecommendMsgData(input, opts = {}) {
     commodityNameList:
       Array.isArray(input.commodityNameList) && input.commodityNameList.length
         ? input.commodityNameList.map((name) => String(name).slice(0, 60))
-        : [`活体动物-${species}`, breed].filter(Boolean),
+        : [petCargoName(species)],
     totalNum: 1,
     phoneNumber: sender.phone || receiver.phone || undefined,
     monthlyCard: opts.monthlyCard || undefined,
@@ -122,12 +142,9 @@ export function buildProductRecommendMsgData(input, opts = {}) {
 export function buildCreateOrderMsgData(input, opts = {}) {
   const sender = input.sender || {}
   const receiver = input.receiver || {}
-  const species = input.species || '宠物'
-  const breed = input.breed || ''
-  const cargoName = (
-    input.cargoName || [`活体动物`, species, breed].filter(Boolean).join('-')
-  ).slice(0, 60)
-  const cargoDesc = String(input.cargoDesc || '活体动物').slice(0, 20)
+  const species = input.species || 'dog'
+  const cargoName = String(input.cargoName || petCargoName(species)).slice(0, 60)
+  const cargoDesc = String(input.cargoDesc || petCargoWord(species)).slice(0, 20)
   const cargoUnit = String(input.cargoUnit || '只').slice(0, 8)
   const weight = Number(input.weightKg) || 1
   const expressTypeId = Number(
@@ -155,7 +172,7 @@ export function buildCreateOrderMsgData(input, opts = {}) {
         province: sender.province,
         city: sender.city,
         county: sender.district || undefined,
-        address: fullAddress(sender)
+        address: streetAddress(sender)
       },
       {
         contactType: 2,
@@ -165,7 +182,7 @@ export function buildCreateOrderMsgData(input, opts = {}) {
         province: receiver.province,
         city: receiver.city,
         county: receiver.district || undefined,
-        address: fullAddress(receiver)
+        address: streetAddress(receiver)
       }
     ],
     expressTypeId,

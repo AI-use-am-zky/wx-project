@@ -15,6 +15,17 @@
     </view>
   </view>
 
+  <view class="card" wx:if="{{order.sfWaybillNo}}">
+    <view class="h2">物流路径</view>
+    <view class="tl" wx:if="{{order.routes && order.routes.length}}">
+      <view class="tl-item {{index===0?'on':''}}" wx:for="{{order.routes}}" wx:key="time">
+        <view class="t">{{item.text}}</view>
+        <view class="d">{{item.time}} {{item.address}}</view>
+      </view>
+    </view>
+    <view class="sub" wx:else>{{order.routesError || '运单已录入，顺丰暂时没有返回路径'}}</view>
+  </view>
+
   <view class="card">
     <view class="h2">进度时间轴</view>
     <view class="tl">

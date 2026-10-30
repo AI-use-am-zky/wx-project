@@ -7,14 +7,33 @@
         <view class="ico" bindtap="goSet">设置</view>
       </view>
     </view>
-    <view class="profile" bindtap="tapUser">
-      <image wx:if="{{loggedIn && avatarUrl}}" class="ava-img" src="{{avatarUrl}}" mode="aspectFill" />
-      <view wx:else class="ava">{{loggedIn ? '途' : '登'}}</view>
+    <view wx:if="{{loggedIn}}" class="profile">
+      <view class="ava-wrap">
+        <button class="ava-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+          <image class="ava-img" src="{{avatarUrl || defaultAvatar}}" mode="aspectFill" />
+        </button>
+        <view class="ava-mark">换</view>
+      </view>
       <view class="grow">
-        <view class="name">{{loggedIn ? (nickName || phone || '已登录') : '点击登录'}}</view>
-        <view class="sub">
-          {{loggedIn ? (needProfile ? '完善微信头像和昵称' : '微信账号已关联 · 点击管理资料') : '登录后管理订单与资料'}}
-        </view>
+        <input
+          type="nickname"
+          class="name-input"
+          placeholder="点击填写昵称"
+          placeholder-class="name-ph"
+          value="{{nickName}}"
+          maxlength="32"
+          bindinput="onNickInput"
+          bindblur="onNickBlur"
+        />
+        <view class="phone">{{phone || '已登录'}}</view>
+      </view>
+      <view class="chev" catchtap="openProfile">›</view>
+    </view>
+    <view wx:else class="profile" bindtap="tapUser">
+      <view class="ava">登</view>
+      <view class="grow">
+        <view class="name">手机号快捷登录</view>
+        <view class="sub">登录后才能下单和查看资料</view>
       </view>
       <view class="chev">›</view>
     </view>

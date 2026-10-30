@@ -32,7 +32,7 @@
 <view wx:if="{{needLogin}}" class="empty-box">
   <view class="empty-title">登录后查看运单</view>
   <view class="empty-sub">下单、取件和补差都会出现在这里。</view>
-  <view class="login-btn" bindtap="doLogin">登录</view>
+  <view class="login-btn" bindtap="doLogin">手机号快捷登录</view>
 </view>
 
 <block wx:else>

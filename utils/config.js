@@ -1,13 +1,12 @@
 const { isDevTools } = require('./env')
 
 /**
- * 开发者工具用本机回环；真机必须走电脑局域网 IP（与手机同一 WiFi）。
- * 若真机连不上，把 LAN_HOST 改成电脑当前 IP（ipconfig 查看）。
+ * 开发者工具走本机后端。真机预览和正式版走已备案域名。
  */
-const LAN_HOST = '192.168.1.250'
-const PORT = 8787
+const LOCAL_PORT = 8787
+const PUBLIC_BASE = 'https://qibantech.net'
 
 module.exports = {
-  baseUrl: isDevTools() ? `http://127.0.0.1:${PORT}` : `http://${LAN_HOST}:${PORT}`,
-  brandName: '宠途空运'
+  baseUrl: isDevTools() ? `http://127.0.0.1:${LOCAL_PORT}` : PUBLIC_BASE,
+  brandName: '航宠通'
 }

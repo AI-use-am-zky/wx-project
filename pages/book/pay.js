@@ -39,7 +39,6 @@ Page({
     agreed: false,
     needPhone: false,
     payMock: true,
-    wxMockLogin: true,
     agreementVersion: 'v1',
     phoneMasked: '',
     summary: {
@@ -62,11 +61,8 @@ Page({
       const s = b.sender || {}
       const r = b.receiver || {}
       const payMock = settings.payMock !== false
-      const wxMockLogin = settings.wxMockLogin !== false
       this.setData({
-        needPhone: !user.phone,
         payMock,
-        wxMockLogin,
         phoneMasked: user.phone ? maskPhone(user.phone) : '',
         agreementVersion: settings.agreementVersion || 'v1',
         summary: {
@@ -84,51 +80,13 @@ Page({
         }
       })
       setBookStep('pay')
-      // 演示环境：自动用寄件人手机号完成账号绑定，避免开发者工具无法真授权
-      if (!user.phone && (payMock || wxMockLogin)) {
-        this.bindMockPhone(s.phone || '13800000000')
-      }
     })
-  },
-  bindMockPhone(phone) {
-    const next = String(phone || '13800000000').replace(/\D/g, '') || '13800000000'
-    return request({ url: '/auth/wx-phone', method: 'POST', data: { phone: next } })
-      .then((d) => {
-        const user = wx.getStorageSync('user') || {}
-        user.phone = d.phone
-        wx.setStorageSync('user', user)
-        this.setData({ needPhone: false, phoneMasked: maskPhone(d.phone) })
-        return d.phone
-      })
   },
   toggle() {
     this.setData({ agreed: !this.data.agreed })
   },
   openAgree() {
     wx.navigateTo({ url: '/pages/legal/agreement' })
-  },
-  onPhone(e) {
-    const code = e.detail && e.detail.code
-    if (!code) {
-      // 开发者工具 / 用户拒绝：演示环境回落模拟号
-      if (this.data.payMock || this.data.wxMockLogin) {
-        const b = getBook()
-        this.bindMockPhone((b.sender && b.sender.phone) || '13800000000').catch((err) =>
-          wx.showToast({ title: (err && err.message) || '授权失败', icon: 'none' })
-        )
-        return
-      }
-      wx.showToast({ title: '需要授权手机号', icon: 'none' })
-      return
-    }
-    request({ url: '/auth/wx-phone', method: 'POST', data: { code } })
-      .then((d) => {
-        const user = wx.getStorageSync('user') || {}
-        user.phone = d.phone
-        wx.setStorageSync('user', user)
-        this.setData({ needPhone: false, phoneMasked: maskPhone(d.phone) })
-      })
-      .catch((err) => wx.showToast({ title: err.message || '授权失败', icon: 'none' }))
   },
   pay() {
     if (!this.data.agreed) {
@@ -193,17 +151,6 @@ Page({
         })
     }
 
-    if (this.data.needPhone) {
-      if (this.data.payMock || this.data.wxMockLogin) {
-        const b = getBook()
-        this.bindMockPhone((b.sender && b.sender.phone) || '13800000000')
-          .then(() => startPay())
-          .catch((err) => wx.showToast({ title: (err && err.message) || '请先授权手机号', icon: 'none' }))
-        return
-      }
-      wx.showToast({ title: '请先授权手机号', icon: 'none' })
-      return
-    }
     startPay()
   }
 })

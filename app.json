@@ -4,6 +4,7 @@
     "pages/send/index",
     "pages/orders/list",
     "pages/me/index",
+    "pages/me/login",
     "pages/book/goods",
     "pages/book/fulfill",
     "pages/book/pay",
@@ -27,7 +28,7 @@
   ],
   "window": {
     "navigationBarTextStyle": "white",
-    "navigationBarTitleText": "宠途空运",
+    "navigationBarTitleText": "航宠通",
     "navigationBarBackgroundColor": "#2d5a4a",
     "backgroundColor": "#f6f3ee"
   },

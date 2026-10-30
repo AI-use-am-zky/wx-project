@@ -1,3 +1,4 @@
+const { isLoggedIn, openLogin } = require('../../utils/auth')
 const { getBook, saveBook, draftResume, hideResume } = require('../../utils/book')
 const { openAddressForm, openAddressBook } = require('../../utils/address-entry')
 const { findProvince, indexesFor, cityFromIndex } = require('../../utils/regions')
@@ -239,6 +240,10 @@ Page({
   resumeBook() {
     const url = this.data.resumeUrl
     if (!url) return
+    if (!isLoggedIn()) {
+      openLogin(this.data.resumeTab ? 'tab:' + url : url)
+      return
+    }
     clearMediaPick()
     if (this.data.resumeTab) {
       wx.switchTab({ url })
@@ -251,6 +256,10 @@ Page({
     this.setData({ resumeText: '', resumeUrl: '', resumeTab: false })
   },
   goBook() {
+    if (!isLoggedIn()) {
+      openLogin('tab:/pages/send/index')
+      return
+    }
     wx.switchTab({ url: '/pages/send/index' })
   },
   goGuide(e) {

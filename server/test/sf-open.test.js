@@ -76,7 +76,7 @@ test('buildProductRecommendMsgData fills required address fields', () => {
   assert.equal(msg.sendTime, '2026-09-30 10:00:00')
   assert.equal(msg.monthlyCard, '7551234567')
   assert.ok(msg.srcAddress.includes('南山区'))
-  assert.ok(msg.commodityNameList[0].includes('活体动物'))
+  assert.equal(msg.commodityNameList[0], '商品狗')
 })
 
 test('buildCreateOrderMsgData builds BSP create-order payload', () => {
@@ -113,11 +113,23 @@ test('buildCreateOrderMsgData builds BSP create-order payload', () => {
   assert.equal(msg.monthlyCard, '7551234567')
   assert.equal(msg.contactInfoList.length, 2)
   assert.equal(msg.contactInfoList[0].contactType, 1)
+  assert.equal(msg.contactInfoList[0].address, '科技园一路1号')
   assert.equal(msg.contactInfoList[1].contactType, 2)
+  assert.equal(msg.contactInfoList[1].address, '望京街2号')
+  assert.equal(msg.contactInfoList[1].province, '北京市')
   assert.equal(msg.serviceList[0].name, 'INSURE')
   assert.equal(msg.serviceList[0].value, '3000')
-  assert.ok(msg.cargoDetails[0].name.includes('活体动物'))
-  assert.equal(msg.cargoDesc, '活体动物')
+  assert.equal(msg.cargoDetails[0].name, '商品狗')
+  assert.equal(msg.cargoDesc, '狗')
+  const cat = buildCreateOrderMsgData({
+    orderId: 'ord-cat',
+    sender: { name: '张三', phone: '13800000001', province: '广东省', city: '深圳市', district: '南山区', detail: '科技园一路1号' },
+    receiver: { name: '李四', phone: '13900000002', province: '北京市', city: '北京市', district: '朝阳区', detail: '望京街2号' },
+    species: 'cat',
+    breed: '英短'
+  })
+  assert.equal(cat.cargoDetails[0].name, '商品猫')
+  assert.equal(cat.cargoDesc, '猫')
   assert.equal(msg.cargoDetails[0].unit, '只')
 })
 

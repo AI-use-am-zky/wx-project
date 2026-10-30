@@ -16,17 +16,19 @@ function request({ url, method = 'GET', data, needAuth = true }) {
         Authorization: getToken() ? 'Bearer ' + getToken() : ''
       },
       success(res) {
-        const body = res.data || {}
+        const body = typeof res.data === 'object' && res.data ? res.data : {}
         if (res.statusCode === 401) {
           wx.removeStorageSync('token')
+          wx.removeStorageSync('user')
           reject({ code: 401, message: '请先登录' })
           return
         }
-        if (res.statusCode >= 400 || body.code) {
-          if (body.code && body.code !== 0) {
-            reject(body)
-            return
-          }
+        if (res.statusCode >= 400) {
+          reject({
+            code: body.code || res.statusCode,
+            message: body.message || '服务异常，请稍后重试'
+          })
+          return
         }
         if (typeof body.code === 'number' && body.code !== 0) {
           reject(body)

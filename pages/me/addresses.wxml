@@ -1,9 +1,3 @@
-<view class="tabs">
-  <view class="tab on">寄中国内地<view class="tab-line"></view></view>
-  <view class="tab" bindtap="soon">寄中国港澳台</view>
-  <view class="tab" bindtap="soon">寄国际</view>
-</view>
-
 <view class="search">
   <text class="search-ico">搜</text>
   <input

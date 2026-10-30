@@ -78,9 +78,6 @@ Page({
     this.setData({ keyword: e.detail.value })
     this.apply()
   },
-  soon() {
-    wx.showToast({ title: '暂仅支持中国内地', icon: 'none' })
-  },
   noop() {},
   choose(e) {
     if (!this.pick) return

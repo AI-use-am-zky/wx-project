@@ -133,7 +133,7 @@
   <view class="promo">
     <view class="promo-head">
       <view class="promo-copy">
-        <view class="promo-title">宠物托运选宠途</view>
+        <view class="promo-title">宠物托运选航宠通</view>
         <view class="promo-sub">专业可靠 | 全程护航</view>
       </view>
       <image class="promo-cat" src="/images/promo-cat.jpg" mode="aspectFit" />

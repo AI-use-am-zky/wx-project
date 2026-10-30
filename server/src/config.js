@@ -34,6 +34,9 @@ export const config = {
   sfWaybillCallbackPath: process.env.SF_WAYBILL_CALLBACK_PATH || '/sfexpress/waybills/back',
   wxAppId: process.env.WX_APP_ID || '',
   wxAppSecret: process.env.WX_APP_SECRET || '',
+  /** 仅本机开发者工具。模拟器拿不到手机号凭证时，仍用 wx.login 的 openid 登录。 */
+  allowDevtoolsLogin: process.env.ALLOW_DEVTOOLS_LOGIN === 'true',
+  devtoolsPhone: process.env.DEVTOOLS_PHONE || '13800138000',
   wxMchId: process.env.WX_MCH_ID || '',
   wxPayKey: process.env.WX_PAY_KEY || '',
   /** 支付结果通知完整 URL，如 https://api.example.com/pay/wx-notify */
@@ -42,10 +45,12 @@ export const config = {
   wxSubscribeTplPickup: process.env.WX_SUBSCRIBE_TPL_PICKUP || '',
   wxSubscribeTplAlert: process.env.WX_SUBSCRIBE_TPL_ALERT || '',
   wxSubscribeTplSigned: process.env.WX_SUBSCRIBE_TPL_SIGNED || '',
+  adminUser: process.env.ADMIN_USER || 'admin',
   adminPassword: process.env.ADMIN_PASSWORD || 'change-me',
   adminNotifyWebhook: process.env.ADMIN_NOTIFY_WEBHOOK || '',
   defaults: {
     markup_rate: process.env.MARKUP_RATE || '0.15',
+    vip_discount_rate: process.env.VIP_DISCOUNT_RATE || '0',
     min_service_fee_cents: process.env.MIN_SERVICE_FEE_CENTS || '15000',
     cancel_fee_before_collect_cents: process.env.CANCEL_FEE_BEFORE_COLLECT_CENTS || '5000',
     reweigh_ignore_kg: process.env.REWEIGH_IGNORE_KG || '1',

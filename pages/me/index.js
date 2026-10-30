@@ -1,8 +1,8 @@
-const { isLoggedIn, login, needsProfile, errMessage } = require('../../utils/auth')
+const { isLoggedIn, openLogin, logout } = require('../../utils/auth')
 const { go, goOrders, goBack: leavePage } = require('../../utils/nav')
 const { fetchBadges, markBadgeSeen, logOp } = require('../../utils/session')
 const { isPickingMedia } = require('../../utils/media-pick')
-const { request } = require('../../utils/request')
+const { request, uploadFile } = require('../../utils/request')
 const config = require('../../utils/config')
 
 const DEFAULT_AVATAR =
@@ -20,7 +20,7 @@ Page({
     phone: '',
     nickName: '',
     avatarUrl: '',
-    needProfile: false,
+    defaultAvatar: DEFAULT_AVATAR,
     padTop: 0,
     navH: 32,
     navPad: 24,
@@ -46,7 +46,6 @@ Page({
         phone: '',
         nickName: '',
         avatarUrl: '',
-        needProfile: false,
         badges: { pending: 0, transit: 0, done: 0, cancelled: 0 }
       })
       logOp('open_me', {})
@@ -67,14 +66,21 @@ Page({
       })
   },
   applyUser(user) {
-    const nickName = user.nickName || ''
-    const avatarUrl = displayAvatar(user.avatarUrl)
+    if (!user.phone) {
+      logout()
+      this.setData({
+        loggedIn: false,
+        phone: '',
+        nickName: '',
+        avatarUrl: ''
+      })
+      return
+    }
     this.setData({
       loggedIn: true,
       phone: user.phone || '',
-      nickName,
-      avatarUrl,
-      needProfile: needsProfile(user)
+      nickName: user.nickName || '',
+      avatarUrl: displayAvatar(user.avatarUrl)
     })
   },
   loadBadges() {
@@ -95,27 +101,59 @@ Page({
   },
   tapUser() {
     if (!this.data.loggedIn) {
-      wx.showLoading({ title: '登录中' })
-      login()
-        .then((data) => {
-          wx.hideLoading()
-          const user = (data && data.user) || wx.getStorageSync('user') || {}
-          this.applyUser(user)
-          this.loadBadges()
-          // 官方流程：登录只拿 openid；头像昵称需用户主动填写
-          if (needsProfile(user) || (data && data.needProfile)) {
-            wx.navigateTo({ url: '/pages/me/profile' })
-          } else {
-            wx.showToast({ title: '登录成功', icon: 'success' })
-          }
-        })
-        .catch((e) => {
-          wx.hideLoading()
-          wx.showToast({ title: errMessage(e), icon: 'none', duration: 3500 })
-        })
+      openLogin()
       return
     }
-    wx.navigateTo({ url: '/pages/me/profile' })
+    this.openProfile()
+  },
+  openProfile() {
+    wx.navigateTo({
+      url: '/pages/me/profile',
+      fail(err) {
+        wx.showToast({ title: (err && err.errMsg) || '资料页打不开', icon: 'none' })
+      }
+    })
+  },
+  onChooseAvatar(e) {
+    const tempPath = e.detail && e.detail.avatarUrl
+    if (!tempPath) {
+      wx.showToast({ title: '没有选到头像', icon: 'none' })
+      return
+    }
+    this.setData({ avatarUrl: tempPath })
+    wx.showLoading({ title: '更新头像' })
+    uploadFile(tempPath)
+      .then((up) => {
+        const path = (up && up.url) || tempPath
+        return request({ url: '/auth/profile', method: 'POST', data: { avatarUrl: path } })
+      })
+      .then((data) => {
+        wx.hideLoading()
+        const user = data.user || {}
+        wx.setStorageSync('user', user)
+        this.applyUser(user)
+        if (!user.avatarUrl) this.setData({ avatarUrl: tempPath })
+        wx.showToast({ title: '头像已更新', icon: 'success' })
+      })
+      .catch((err) => {
+        wx.hideLoading()
+        wx.showToast({ title: (err && err.message) || '头像保存失败', icon: 'none' })
+      })
+  },
+  onNickInput(e) {
+    this._nick = (e.detail && e.detail.value) || ''
+  },
+  onNickBlur(e) {
+    const nickName = String((e.detail && e.detail.value) || this._nick || '').trim()
+    if (!nickName || nickName === this.data.nickName) return
+    this.setData({ nickName })
+    request({ url: '/auth/profile', method: 'POST', data: { nickName } })
+      .then((data) => {
+        const user = data.user || {}
+        wx.setStorageSync('user', user)
+        this.applyUser(user)
+      })
+      .catch((err) => wx.showToast({ title: (err && err.message) || '昵称保存失败', icon: 'none' }))
   },
   goBack() {
     leavePage()

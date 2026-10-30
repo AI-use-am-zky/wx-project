@@ -9,10 +9,27 @@ import {
   ownerOf
 } from './db.js'
 import { config } from './config.js'
-import { priceFromSfCost, priceFromRateCard, surchargeFromReweigh, refundAmount } from './domain/pricing.js'
+import { priceFromSfCost, priceFromRateCard, applyVipDiscount, surchargeFromReweigh, refundAmount } from './domain/pricing.js'
 import { STATUS, isCollectedOrAfter, canIssueInvoice, transportStatusAfterSurcharge } from './domain/order-machine.js'
 import { validAddress, requireFields, BREEDS, ADDON_QUARANTINE_CENTS, insureFeeCents } from './http.js'
 import { statusFromSfOpCode } from './adapters/sf-open.js'
+
+function normalizePhone(value) {
+  const digits = String(value || '').replace(/\D/g, '')
+  if (digits.length === 13 && digits.startsWith('86')) return digits.slice(2)
+  return digits
+}
+
+function vipDiscountRateFor(userId) {
+  const user = db.prepare('SELECT phone FROM users WHERE id = ?').get(userId)
+  const phone = normalizePhone(user && user.phone)
+  if (!/^1\d{10}$/.test(phone)) return 0
+  const vip = db.prepare('SELECT phone FROM vip_accounts WHERE phone = ?').get(phone)
+  if (!vip) return 0
+  const rate = Number(getSetting('vip_discount_rate'))
+  if (!(rate > 0) || rate >= 1) return 0
+  return rate
+}
 
 function udbOfOrder(orderId) {
   const hit = dbForResource('order', orderId)
@@ -81,6 +98,7 @@ export async function createQuote({ userId, sender, receiver, species, breed, we
   } catch {
     priced = priceFromRateCard(lookupRateCard(sender.city, receiver.city, kg))
   }
+  priced = applyVipDiscount(priced, vipDiscountRateFor(userId))
   const id = uuid()
   const expires = new Date(Date.now() + 25 * 60 * 1000).toISOString()
   const product = rawSf && rawSf.product
@@ -97,7 +115,9 @@ export async function createQuote({ userId, sender, receiver, species, breed, we
     sfExpressTypeId: config.sfExpressTypeId,
     quoteProductCode: (product && product.productCode) || null,
     quoteProductName:
-      (product && (product.productDisplayName || product.productName)) || null
+      (product && (product.productDisplayName || product.productName)) || null,
+    vip: Boolean(priced.vip),
+    vipDiscountRate: priced.vipDiscountRate || 0
   }
   const udb = getUserDb(userId)
   udb.prepare(
@@ -261,7 +281,7 @@ export async function createOrder({ userId, body, sf, wechat, notify }) {
         orderId,
         openid: user && user.openid,
         totalFee: paidCents,
-        description: '宠途空运-' + (quotePayload.petName || quotePayload.breed || '订单')
+        description: '航宠通-' + (quotePayload.petName || quotePayload.breed || '订单')
       })
       payMock = Boolean(payParams && payParams.mock)
     }
@@ -343,13 +363,32 @@ export async function markPaidAwaitConfirm({ orderId, notify }) {
   if (!o || o.status !== STATUS.PENDING_PAY) return getOrder(orderId)
   const payload = JSON.parse(o.payload_json)
   udb.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(STATUS.PAID, nowIso(), orderId)
-  addEvent(orderId, 'paid', '支付成功。客服将电话回访确认寄收件信息，确认后再向顺丰预约上门取件')
-  const summary = '待电话回访。' + contactSummary(payload)
+  addEvent(orderId, 'paid', '下单成功。尚未向顺丰出运单，录入运单号后可查看物流路径')
+  const summary = '新订单，待回访。' + contactSummary(payload)
   if (notify) notify.send('order.await_confirm', { orderId, summary })
   return getOrder(orderId)
 }
 
-/** 客服回访确认后，由管理端调用，向顺丰下上门取件。 */
+/** 只记录运单号，不调用顺丰下单。有运单号后，订单详情会向顺丰查路径。 */
+export function attachWaybill({ orderId, waybillNo, sfOrderId }) {
+  const udb = udbOfOrder(orderId)
+  if (!udb) return null
+  const no = String(waybillNo || '').trim()
+  if (!no) {
+    const err = new Error('请填写运单号')
+    err.status = 400
+    throw err
+  }
+  const o = udb.prepare('SELECT * FROM orders WHERE id = ?').get(orderId)
+  if (!o) return null
+  udb.prepare(
+    'UPDATE orders SET sf_waybill_no = ?, sf_order_id = ?, status = ?, sf_error = NULL, updated_at = ? WHERE id = ?'
+  ).run(no, sfOrderId || no, STATUS.BOOKED, nowIso(), orderId)
+  addEvent(orderId, 'waybill', `已录入运单号 ${no}，可查看物流路径`)
+  return getOrder(orderId)
+}
+
+/** 管理端对已支付、尚未出运单的订单，向顺丰下一笔上门取件。 */
 export async function submitSfPickup({ orderId, sf, notify }) {
   const udb = udbOfOrder(orderId)
   if (!udb) return null

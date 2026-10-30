@@ -9,7 +9,7 @@
       <text class="muted">v1 ›</text>
     </view>
     <view class="pick-row" bindtap="about">
-      <text>关于宠途空运</text>
+      <text>关于航宠通</text>
       <text class="muted">v0.1</text>
     </view>
     <view wx:if="{{showSfDebug}}" class="pick-row" bindtap="go" data-url="/pages/debug/sf-recommend">

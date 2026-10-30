@@ -60,6 +60,11 @@ CREATE TABLE IF NOT EXISTS resource_index (
 );
 CREATE INDEX IF NOT EXISTS idx_resource_user ON resource_index(user_id, kind);
 CREATE INDEX IF NOT EXISTS idx_resource_kind ON resource_index(kind, created_at DESC);
+CREATE TABLE IF NOT EXISTS vip_accounts (
+  phone TEXT PRIMARY KEY,
+  name TEXT,
+  created_at TEXT NOT NULL
+);
 `)
 
 for (const col of ['session_key', 'unionid', 'nick_name', 'avatar_url', 'db_path']) {
@@ -253,6 +258,7 @@ export function getUserDb(userId) {
   udb = new DatabaseSync(p)
   udb.exec('PRAGMA journal_mode = WAL')
   initUserSchema(udb)
+  udb.exec('DELETE FROM demo_orders; DELETE FROM demo_seed;')
   userDbCache.set(userId, udb)
   if (!existed) {
     udb.prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)').run('created_at', nowIso())
@@ -314,12 +320,6 @@ function migrateLegacySessionDb(udb, userId) {
     return
   }
   try {
-    for (const r of sdb.prepare('SELECT * FROM demo_orders WHERE user_id = ?').all(userId)) {
-      udb.prepare(
-        `INSERT OR IGNORE INTO demo_orders (id, user_id, tab_key, status, payload_json, paid_cents, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-      ).run(r.id, r.user_id, r.tab_key, r.status, r.payload_json, r.paid_cents, r.created_at, r.updated_at)
-    }
     for (const r of sdb.prepare('SELECT * FROM badge_reads WHERE user_id = ?').all(userId)) {
       udb.prepare('INSERT OR IGNORE INTO badge_reads (user_id, tab_key, read_at) VALUES (?, ?, ?)').run(
         r.user_id,
@@ -331,9 +331,6 @@ function migrateLegacySessionDb(udb, userId) {
       udb.prepare(
         'INSERT OR IGNORE INTO operations (id, user_id, type, payload_json, created_at) VALUES (?, ?, ?, ?, ?)'
       ).run(r.id, r.user_id, r.type, r.payload_json, r.created_at)
-    }
-    for (const r of sdb.prepare('SELECT * FROM demo_seed WHERE user_id = ?').all(userId)) {
-      udb.prepare('INSERT OR IGNORE INTO demo_seed (user_id, seeded_at) VALUES (?, ?)').run(r.user_id, r.seeded_at)
     }
   } finally {
     try {

@@ -1,4 +1,4 @@
-const { requireLoginPage } = require('../../utils/auth')
+const { isLoggedIn } = require('../../utils/auth')
 const { request, uploadFile } = require('../../utils/request')
 const config = require('../../utils/config')
 
@@ -20,9 +20,11 @@ Page({
   },
   _avatarPath: '',
   onLoad() {
-    requireLoginPage()
-      .then(() => this.loadMe())
-      .catch(() => {})
+    if (!isLoggedIn()) {
+      wx.redirectTo({ url: '/pages/me/login' })
+      return
+    }
+    this.loadMe()
   },
   loadMe() {
     return request({ url: '/auth/me' })
@@ -68,22 +70,6 @@ Page({
   },
   onNickBlur(e) {
     this.setData({ nickName: (e.detail && e.detail.value) || this.data.nickName || '' })
-  },
-  onPhone(e) {
-    const code = e.detail && e.detail.code
-    if (!code) {
-      wx.showToast({ title: '需要授权手机号', icon: 'none' })
-      return
-    }
-    request({ url: '/auth/wx-phone', method: 'POST', data: { code } })
-      .then((d) => {
-        const user = wx.getStorageSync('user') || {}
-        user.phone = d.phone
-        wx.setStorageSync('user', user)
-        this.setData({ phone: d.phone })
-        wx.showToast({ title: '手机号已绑定', icon: 'success' })
-      })
-      .catch((err) => wx.showToast({ title: err.message || '授权失败', icon: 'none' }))
   },
   save() {
     if (this.data.saving) return

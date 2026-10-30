@@ -1,5 +1,5 @@
 const { getBook, saveBook, setBookStep, quoteExpired } = require('../../utils/book')
-const { requireLoginPage } = require('../../utils/auth')
+const { isLoggedIn, openLogin, requireLoginPage } = require('../../utils/auth')
 const { findProvince, indexesFor, cityFromIndex, samePlace } = require('../../utils/regions')
 const { isPickingMedia } = require('../../utils/media-pick')
 const { request, yuan } = require('../../utils/request')
@@ -109,6 +109,7 @@ Page({
     if (isPickingMedia()) return
     this.takePicked()
     this.sync()
+    if (!isLoggedIn()) return
     this.maybeQuote()
   },
   onHide() {
@@ -117,6 +118,11 @@ Page({
   goBack() {
     this.remember()
     leavePage()
+  },
+  guard() {
+    if (isLoggedIn()) return true
+    openLogin('tab:/pages/send/index')
+    return false
   },
   remember() {
     if (!this._synced) return
@@ -257,6 +263,7 @@ Page({
     openAddressBook(e.currentTarget.dataset.who).catch(() => {})
   },
   swap() {
+    if (!this.guard()) return
     const b = getBook()
     const sender = b.sender
     b.sender = b.receiver
@@ -274,6 +281,7 @@ Page({
     wx.showToast({ title: '当前只支持上门取件', icon: 'none' })
   },
   pickTime() {
+    if (!this.guard()) return
     wx.showActionSheet({
       itemList: TIMES,
       success: (res) => {
@@ -302,6 +310,7 @@ Page({
       .catch(() => {})
   },
   pickPay() {
+    if (!this.guard()) return
     wx.showActionSheet({
       itemList: PAYS,
       success: (res) => {
@@ -314,6 +323,7 @@ Page({
     })
   },
   pickEta(e) {
+    if (!this.guard()) return
     const etaKey = e.currentTarget.dataset.key
     const b = getBook()
     b.etaKey = etaKey
@@ -322,6 +332,7 @@ Page({
     this.sync()
   },
   pickInsure(e) {
+    if (!this.guard()) return
     const mode = e.currentTarget.dataset.mode
     const b = getBook()
     b.insure = true
@@ -335,6 +346,7 @@ Page({
     this.sync()
   },
   pickFixed(e) {
+    if (!this.guard()) return
     const yuanValue = e.currentTarget.dataset.yuan
     const b = getBook()
     b.insure = true
@@ -345,6 +357,7 @@ Page({
     this.sync()
   },
   onDeclared(e) {
+    if (!this.guard()) return
     const value = String(e.detail.value || '').replace(/[^\d.]/g, '')
     const b = getBook()
     b.insure = true
@@ -359,6 +372,7 @@ Page({
     wx.showToast({ title: '暂无可用优惠券', icon: 'none' })
   },
   onRemark(e) {
+    if (!this.guard()) return
     const remark = e.detail.value
     const b = getBook()
     b.petNote = remark

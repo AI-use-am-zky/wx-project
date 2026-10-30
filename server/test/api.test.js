@@ -20,6 +20,24 @@ async function json(res) {
   return data
 }
 
+test('real login requires a phone code', async () => {
+  config.wxMockLogin = false
+  const app = createApp()
+  const s = await listen(app)
+  try {
+    const { port } = s.address()
+    const res = await fetch(`http://127.0.0.1:${port}/auth/wx-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: 'no-phone' })
+    })
+    assert.equal(res.status, 400)
+  } finally {
+    config.wxMockLogin = true
+    s.close()
+  }
+})
+
 test('quotes require login', async () => {
   const app = createApp()
   const s = await listen(app)
@@ -72,6 +90,7 @@ test('happy quote and mock pay', async () => {
       body: JSON.stringify({ code: 'test-code-2' })
     }))
     const token = login.data.token
+    assert.ok(login.data.user.phone)
     const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }
     const addr = {
       name: '张三',
@@ -108,57 +127,70 @@ test('happy quote and mock pay', async () => {
     assert.equal(paid.code, 0)
     assert.equal(paid.data.status, 'paid')
     assert.equal(paid.data.sfWaybillNo, null)
+    const denied = await json(await fetch(`http://127.0.0.1:${port}/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'nope', password: config.adminPassword })
+    }))
+    assert.equal(denied.code, 401)
     const admin = await json(await fetch(`http://127.0.0.1:${port}/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: config.adminPassword })
+      body: JSON.stringify({ username: config.adminUser, password: config.adminPassword })
     }))
     assert.equal(admin.code, 0)
-    const submitted = await json(await fetch(`http://127.0.0.1:${port}/admin/orders/${order.data.orderId}/sf-retry`, {
+    const adminHeaders = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + admin.data.token }
+    const listed = await json(await fetch(`http://127.0.0.1:${port}/admin/orders`, { headers: adminHeaders }))
+    const mine = (listed.data.list || []).find((item) => item.id === order.data.orderId)
+    assert.equal(mine.quoteSource, 'sf')
+    assert.ok(mine.sfCostCents > 0)
+    const badPwd = await json(await fetch(`http://127.0.0.1:${port}/admin/password`, {
+      method: 'POST',
+      headers: adminHeaders,
+      body: JSON.stringify({ currentPassword: 'wrong-pass', newPassword: '123456' })
+    }))
+    assert.equal(badPwd.code, 400)
+    const submitted = await json(await fetch(`http://127.0.0.1:${port}/admin/orders/${order.data.orderId}/waybill`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + admin.data.token },
-      body: '{}'
+      body: JSON.stringify({ waybillNo: 'SF1000000000001' })
     }))
     assert.equal(submitted.code, 0)
     assert.equal(submitted.data.status, 'booked')
-    assert.ok(submitted.data.sfWaybillNo)
+    assert.equal(submitted.data.sfWaybillNo, 'SF1000000000001')
   } finally {
     s.close()
   }
 })
 
-test('demo orders seed badges and session ops', async () => {
+test('new users start with an empty order list and separate databases', async () => {
   const app = createApp()
   const s = await listen(app)
   try {
     const { port } = s.address()
-    const login = await json(await fetch(`http://127.0.0.1:${port}/auth/wx-login`, {
+    const login = async (code) => json(await fetch(`http://127.0.0.1:${port}/auth/wx-login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: 'demo-seed-' + Date.now() })
+      body: JSON.stringify({ code })
     }))
-    const token = login.data.token
-    const headers = { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }
-    const badges = await json(await fetch(`http://127.0.0.1:${port}/session/badges`, { headers }))
-    assert.equal(badges.code, 0)
+    const a = await login('user-a-' + Date.now())
+    const b = await login('user-b-' + Date.now())
+    assert.equal(a.code, 0)
+    assert.equal(b.code, 0)
+    assert.notEqual(a.data.user.id, b.data.user.id)
+    assert.equal(a.data.dbPath, `users/${a.data.user.id}.sqlite`)
+    assert.equal(b.data.dbPath, `users/${b.data.user.id}.sqlite`)
+    const orders = await json(await fetch(`http://127.0.0.1:${port}/orders`, {
+      headers: { Authorization: 'Bearer ' + a.data.token }
+    }))
+    assert.equal(orders.code, 0)
+    assert.deepEqual(orders.data.list, [])
+    const badges = await json(await fetch(`http://127.0.0.1:${port}/session/badges`, {
+      headers: { Authorization: 'Bearer ' + a.data.token }
+    }))
     for (const tab of ['pending', 'transit', 'done', 'cancelled']) {
-      assert.ok(badges.data[tab].count >= 1 && badges.data[tab].count <= 5)
-      assert.equal(badges.data[tab].unread, true)
+      assert.equal(badges.data[tab].count, 0)
     }
-    const orders = await json(await fetch(`http://127.0.0.1:${port}/orders`, { headers }))
-    assert.ok(orders.data.list.length >= 4)
-    const first = orders.data.list[0]
-    const detail = await json(await fetch(`http://127.0.0.1:${port}/orders/${first.id}`, { headers }))
-    assert.equal(detail.code, 0)
-    assert.equal(detail.data.demo, true)
-    const seen = await json(await fetch(`http://127.0.0.1:${port}/session/badges/seen`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ tab: 'pending' })
-    }))
-    assert.equal(seen.data.pending.unread, false)
-    const ops = await json(await fetch(`http://127.0.0.1:${port}/session/ops`, { headers }))
-    assert.ok(ops.data.list.some((o) => o.type === 'badge_seen'))
   } finally {
     s.close()
   }

@@ -1,29 +1,5 @@
 page { background: #f3efe8; color: #15241e; }
 
-.tabs {
-  display: flex;
-  background: #fff;
-  padding: 8rpx 12rpx 0;
-}
-.tab {
-  flex: 1;
-  text-align: center;
-  font-size: 28rpx;
-  color: #7a847e;
-  padding: 20rpx 0 16rpx;
-  position: relative;
-}
-.tab.on { color: #1e4d3e; font-weight: 700; }
-.tab-line {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 48rpx;
-  height: 6rpx;
-  margin-left: -24rpx;
-  border-radius: 6rpx;
-  background: #1e4d3e;
-}
 .search {
   margin: 20rpx 24rpx;
   height: 72rpx;

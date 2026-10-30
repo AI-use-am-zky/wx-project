@@ -3,3 +3,9 @@ server/node_modules/
 server/data/
 server/.env
 project.private.config.json
+.tmp-pdf-preview/
+server/src.zip
+wx-project/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

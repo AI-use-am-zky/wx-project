@@ -3,196 +3,577 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>宠途空运 · 管理端</title>
+  <title>航宠通 · 管理端</title>
   <style>
-    :root { --bg:#f6f3ee; --card:#fff; --ink:#1f2a24; --muted:#6b746e; --acc:#2d5a4a; }
+    :root { --bg:#f6f3ee; --card:#fff; --ink:#1f2a24; --muted:#6b746e; --acc:#2d5a4a; --line:#e6ebe7; }
     * { box-sizing: border-box; }
-    body { margin:0; font-family: "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
-    header { background:var(--acc); color:#fff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; }
-    main { max-width:1100px; margin:20px auto; padding:0 16px; }
+    body { margin:0; font-family: "Segoe UI", "PingFang SC", sans-serif; background:var(--bg); color:var(--ink); }
+    header { background:var(--acc); color:#fff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    main { max-width:1280px; margin:20px auto; padding:0 16px 40px; }
     .card { background:var(--card); border-radius:12px; padding:16px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
-    input, select, button, textarea { font: inherit; padding:8px 10px; border:1px solid #d7ddd8; border-radius:8px; }
+    h1 { font-size:20px; margin:0; }
+    h3 { margin:0 0 12px; }
+    input, select, button { font: inherit; padding:8px 10px; border:1px solid #d7ddd8; border-radius:8px; }
     button { background:var(--acc); color:#fff; border:none; cursor:pointer; }
     button.ghost { background:#fff; color:var(--acc); border:1px solid var(--acc); }
-    table { width:100%; border-collapse:collapse; font-size:14px; }
-    th, td { text-align:left; padding:8px 6px; border-bottom:1px solid #eee; }
-    .row { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+    button:disabled { opacity:.55; cursor:default; }
+    label { display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--muted); }
+    label input { color:var(--ink); min-width:140px; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
     .muted { color:var(--muted); font-size:13px; }
+    .err { color:#9b2c2c; font-size:13px; min-height:1.2em; }
+    .login { max-width:420px; margin:48px auto; }
+    .pwd-link { margin:0; font-size:13px; }
+    .pwd-link a { color:var(--muted); text-decoration:none; }
+    .pwd-link a:hover { color:var(--acc); }
+    .pwd-box { display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+    th { color:var(--muted); font-weight:600; white-space:nowrap; }
+    .scroll { overflow:auto; }
+    .addr { line-height:1.45; max-width:220px; }
+    .ops { display:flex; flex-direction:column; gap:6px; margin-top:6px; }
     pre { white-space:pre-wrap; font-size:12px; background:#f3f6f4; padding:8px; border-radius:8px; }
+    .tag { display:inline-block; padding:2px 8px; border-radius:999px; background:#eef4f0; color:var(--acc); }
   </style>
 </head>
 <body>
   <header>
-    <strong>宠途空运管理端</strong>
-    <span id="who" class="muted" style="color:#d9efe4"></span>
+    <h1>航宠通管理端</h1>
+    <span id="who"></span>
   </header>
   <main>
-    <div class="card" id="loginBox">
-      <h3>登录</h3>
+    <div class="card login" id="loginBox">
+      <h3>管理员登录</h3>
       <div class="row">
-        <input id="pwd" type="password" placeholder="管理员密码" />
-        <button onclick="login()">登录</button>
+        <label>账号
+          <input id="user" autocomplete="username" value="admin" />
+        </label>
+        <label>密码
+          <input id="pwd" type="password" autocomplete="current-password" />
+        </label>
+        <button id="loginBtn" onclick="login()">登录</button>
       </div>
-      <p class="muted">默认见 server/.env.example 的 ADMIN_PASSWORD</p>
+      <p id="loginErr" class="err"></p>
+      <p class="pwd-link"><a href="javascript:void(0)" onclick="togglePassword()">修改密码</a></p>
+      <div class="pwd-box" id="pwdBox">
+        <div class="row">
+          <label>当前密码
+            <input id="oldPwd" type="password" autocomplete="current-password" />
+          </label>
+          <label>新密码
+            <input id="newPwd" type="password" autocomplete="new-password" />
+          </label>
+          <label>再输入一次
+            <input id="newPwd2" type="password" autocomplete="new-password" />
+          </label>
+          <button id="pwdBtn" onclick="changePassword()">保存密码</button>
+        </div>
+        <p id="pwdMsg" class="err"></p>
+      </div>
     </div>
+
     <div id="app" style="display:none">
       <div class="card">
+        <h3>加价</h3>
+        <p class="muted">下一笔估价按这个比例计算。顺丰成本出来后，服务费取「成本 × 加价」和「最低服务费」里较高的一个，售价 = 成本 + 服务费。已生成的订单金额不变。</p>
         <div class="row">
-          <select id="status">
-            <option value="">全部状态</option>
-            <option value="paid">待回访</option>
-            <option value="sf_failed">顺丰失败</option>
-            <option value="pending_pay">待支付</option>
-            <option value="booked">待揽收</option>
-            <option value="surcharge_pending">待补差</option>
-            <option value="signed">已签收</option>
-          </select>
-          <button onclick="loadOrders()">刷新列表</button>
+          <label>加价（%）
+            <input id="markupPercent" inputmode="decimal" />
+          </label>
+          <label>最低服务费（元）
+            <input id="minFeeYuan" inputmode="decimal" />
+          </label>
+          <label>未揽收取消费（元）
+            <input id="cancelFeeYuan" inputmode="decimal" />
+          </label>
+          <button onclick="saveSettings()">保存加价</button>
         </div>
-        <p class="muted">顾客支付后停在「待回访」。先打电话核对寄收件人和宠物信息，确认后再点「向顺丰下上门取件」。支付本身不会出运单。</p>
-        <table>
-          <thead><tr><th>ID</th><th>状态</th><th>寄件人</th><th>收件 / 宠物</th><th>金额</th><th>运单</th><th></th></tr></thead>
-          <tbody id="tbody"></tbody>
-        </table>
+        <p id="markupPreview" class="muted"></p>
       </div>
-      <div class="card" id="detail"></div>
       <div class="card">
-        <h3>运营配置（后定数字可改）</h3>
+        <h3>VIP 账户</h3>
+        <p class="muted">用顾客登录手机号登记。所有 VIP 共用下面这一个运费折扣，下一笔估价生效。航空箱、检疫和保价不打折。顾客还没登录也可以先登记，登录后估价自动按折扣算。</p>
         <div class="row">
-          <label>加价比例 <input id="markup_rate" /></label>
-          <label>最低服务费(分) <input id="min_service_fee_cents" /></label>
-          <label>取消手续费(分) <input id="cancel_fee_before_collect_cents" /></label>
-          <button onclick="saveSettings()">保存</button>
+          <label>统一折扣（%）
+            <input id="vipDiscountPercent" inputmode="decimal" placeholder="例如 10 表示运费打九折" />
+          </label>
+          <button onclick="saveVipDiscount()">保存折扣</button>
         </div>
+        <p id="vipPreview" class="muted"></p>
+        <div class="row" style="margin-top:16px">
+          <label>手机号
+            <input id="vipPhone" inputmode="numeric" maxlength="11" placeholder="11 位手机号" />
+          </label>
+          <label>称呼
+            <input id="vipName" maxlength="32" placeholder="选填" />
+          </label>
+          <button onclick="addVip()">登记 VIP</button>
+        </div>
+        <p id="vipMsg" class="err"></p>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr><th>手机号</th><th>称呼</th><th>登记时间</th><th></th></tr>
+            </thead>
+            <tbody id="vipBody"></tbody>
+          </table>
+        </div>
+        <p id="vipEmpty" class="muted">还没有 VIP。</p>
       </div>
+
+      <div class="card">
+        <div class="row">
+          <label>状态
+            <select id="status">
+              <option value="">全部</option>
+              <option value="paid">已支付，待向顺丰下单</option>
+              <option value="sf_failed">顺丰下单失败</option>
+              <option value="sf_submitting">正在向顺丰下单</option>
+              <option value="booked">已出运单</option>
+              <option value="pending_pay">待支付</option>
+              <option value="collected">已揽收</option>
+              <option value="in_transit">运输中</option>
+              <option value="signed">已签收</option>
+              <option value="surcharge_pending">待补差</option>
+              <option value="cancelled">已取消</option>
+              <option value="refunded">已退款</option>
+            </select>
+          </label>
+          <button onclick="loadOrders()">刷新</button>
+        </div>
+        <p class="muted">「向顺丰下单」只对已支付、还没有运单的订单可用。点下去会按该订单的地址、宠物和取件日，向当前环境的顺丰真实下单。</p>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>状态</th>
+                <th>顾客</th>
+                <th>寄件</th>
+                <th>收件</th>
+                <th>宠物</th>
+                <th>顺丰估价</th>
+                <th>顾客实付</th>
+                <th>运单</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <p id="empty" class="muted" style="display:none">还没有订单。</p>
+      </div>
+      <div class="card" id="detail" style="display:none"></div>
     </div>
   </main>
   <script>
     const api = location.origin
     let token = localStorage.getItem('adminToken') || ''
-    async function req(path, opts={}) {
-      const res = await fetch(api + path, {
-        ...opts,
-        headers: { 'Content-Type':'application/json', Authorization: token ? 'Bearer '+token : '', ...(opts.headers||{}) }
-      })
-      return res.json()
-    }
-    async function login() {
-      const r = await req('/admin/login', { method:'POST', body: JSON.stringify({ password: document.getElementById('pwd').value }) })
-      if (r.code !== 0) return alert(r.message)
-      token = r.data.token
-      localStorage.setItem('adminToken', token)
-      showApp()
-    }
-    function showApp() {
-      document.getElementById('loginBox').style.display = 'none'
-      document.getElementById('app').style.display = 'block'
-      document.getElementById('who').textContent = '已登录'
-      loadOrders(); loadSettings()
-    }
+    let adminName = localStorage.getItem('adminUser') || ''
     const STATUS_LABEL = {
       pending_pay: '待支付',
-      paid: '待回访',
+      paid: '已支付',
       sf_submitting: '正在下顺丰',
       sf_failed: '顺丰失败',
-      booked: '已约上门',
+      booked: '已出运单',
       collected: '已揽收',
       in_transit: '运输中',
       signed: '已签收',
       cancel_requested: '取消处理中',
       cancelled: '已取消',
+      refunding: '退款中',
       refunded: '已退款',
       surcharge_pending: '待补差'
     }
+
     function esc(s) {
       return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
     }
-    function who(a) {
-      if (!a) return '未填'
-      return [a.name, a.phone, a.province, a.city, a.district, a.detail].filter(Boolean).join(' ')
+    function yuan(cents) {
+      return (Number(cents || 0) / 100).toFixed(2)
     }
+    function sfQuoteText(o) {
+      const name = o.quoteProductName ? '<br><span class="muted">' + esc(o.quoteProductName) + '</span>' : ''
+      if (o.quoteSource === 'sf' && o.sfCostCents != null) return '¥' + yuan(o.sfCostCents) + name
+      if (o.quoteSource === 'rate_card') return '本地价卡' + name
+      return '—'
+    }
+    function addr(a) {
+      if (!a) return '未填'
+      const place = [a.province, a.city, a.district, a.detail].filter(Boolean).join('')
+      return '<div class="addr"><b>' + esc(a.name || '') + '</b> ' + esc(a.phone || '') + '<br>' + esc(place) + '</div>'
+    }
+    function when(iso) {
+      if (!iso) return ''
+      return String(iso).replace('T', ' ').slice(0, 16)
+    }
+    function canSf(o) {
+      return !o.sfWaybillNo && (o.status === 'paid' || o.status === 'sf_failed')
+    }
+    async function req(path, opts = {}) {
+      const res = await fetch(api + path, {
+        ...opts,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token ? 'Bearer ' + token : '',
+          ...(opts.headers || {})
+        }
+      })
+      const data = await res.json().catch(() => ({ code: res.status, message: '服务器没有返回 JSON' }))
+      if (res.status === 401 && path !== '/admin/login') {
+        logout()
+        throw new Error('登录已失效')
+      }
+      return data
+    }
+
+    async function login() {
+      const btn = document.getElementById('loginBtn')
+      const err = document.getElementById('loginErr')
+      err.textContent = ''
+      btn.disabled = true
+      try {
+        const r = await req('/admin/login', {
+          method: 'POST',
+          body: JSON.stringify({
+            username: document.getElementById('user').value.trim(),
+            password: document.getElementById('pwd').value
+          })
+        })
+        if (r.code !== 0) {
+          err.textContent = r.message || '登录失败'
+          return
+        }
+        token = r.data.token
+        adminName = r.data.username
+        localStorage.setItem('adminToken', token)
+        localStorage.setItem('adminUser', adminName)
+        document.getElementById('pwd').value = ''
+        showApp()
+      } catch (e) {
+        err.textContent = e.message || '登录失败'
+      } finally {
+        btn.disabled = false
+      }
+    }
+    function logout() {
+      token = ''
+      adminName = ''
+      localStorage.removeItem('adminToken')
+      localStorage.removeItem('adminUser')
+      document.getElementById('loginBox').style.display = 'block'
+      document.getElementById('app').style.display = 'none'
+      document.getElementById('who').textContent = ''
+    }
+    function showApp() {
+      document.getElementById('loginBox').style.display = 'none'
+      document.getElementById('app').style.display = 'block'
+      document.getElementById('who').innerHTML = esc(adminName || '管理员') + ' <button class="ghost" onclick="logout()">退出</button>'
+      loadOrders()
+      loadSettings()
+      loadVips()
+    }
+    function petLine(o) {
+      const species = o.species === 'cat' ? '猫' : (o.species === 'dog' ? '狗' : (o.species || ''))
+      const crate = o.crateMode === 'buy' ? '购买航空箱' : '自备航空箱'
+      const quar = o.quarantineMode === 'agency' ? '代办检疫' : '自备检疫'
+      const insure = o.insure ? '已保价' : '不保价'
+      return esc([o.petName, o.breed || species, o.weightKg ? o.weightKg + 'kg' : ''].filter(Boolean).join(' '))
+        + '<br><span class="muted">' + esc([o.pickupDate ? '取件 ' + o.pickupDate : '', crate, quar, insure].filter(Boolean).join(' · ')) + '</span>'
+    }
+
     async function loadOrders() {
       const st = document.getElementById('status').value
-      const r = await req('/admin/orders' + (st ? ('?status='+st) : ''))
-      const tb = document.getElementById('tbody')
-      tb.innerHTML = (r.data.list||[]).map(o => {
-        const sender = o.sender || {}
-        const receiver = o.receiver || {}
-        return `<tr>
-        <td>${esc(o.id.slice(0,8))}</td>
-        <td>${esc(STATUS_LABEL[o.status] || o.status)}</td>
-        <td>${esc(sender.name)} ${esc(sender.phone)}</td>
-        <td>${esc(receiver.city || '')} ${esc(o.petName || o.breed || '')} ${esc(o.pickupDate || '')}</td>
-        <td>¥${(o.paidCents/100).toFixed(2)}</td>
-        <td>${esc(o.sfWaybillNo||'-')}</td>
-        <td><button class="ghost" onclick="openDetail('${o.id}')">详情</button></td>
-      </tr>`
+      const r = await req('/admin/orders' + (st ? ('?status=' + encodeURIComponent(st)) : ''))
+      const list = (r.data && r.data.list) || []
+      document.getElementById('empty').style.display = list.length ? 'none' : 'block'
+      document.getElementById('tbody').innerHTML = list.map((o) => {
+        const sfBtn = canSf(o)
+          ? '<button data-sf="' + esc(o.id) + '">向顺丰下单</button>'
+          : ''
+        return '<tr>'
+          + '<td>' + esc(when(o.createdAt)) + '</td>'
+          + '<td><span class="tag">' + esc(STATUS_LABEL[o.status] || o.status) + '</span>'
+          + (o.sfError ? '<br><span class="err">' + esc(o.sfError) + '</span>' : '')
+          + '<div class="ops">' + sfBtn + '<button class="ghost" data-detail="' + esc(o.id) + '">详情</button></div></td>'
+          + '<td>' + esc(o.userNick || '') + '<br>' + esc(o.userPhone || '')
+          + (o.vip ? '<br><span class="tag">VIP ' + esc(Math.round(Number(o.vipDiscountRate || 0) * 1000) / 10) + '% off</span>' : '')
+          + '</td>'
+          + '<td>' + addr(o.sender) + '</td>'
+          + '<td>' + addr(o.receiver) + '</td>'
+          + '<td>' + petLine(o) + '</td>'
+          + '<td>' + sfQuoteText(o) + '</td>'
+          + '<td>¥' + yuan(o.paidCents) + '</td>'
+          + '<td>' + esc(o.sfWaybillNo || '—') + '</td>'
+          + '</tr>'
       }).join('')
     }
+
+    document.getElementById('tbody').addEventListener('click', (e) => {
+      const sf = e.target.getAttribute('data-sf')
+      const detail = e.target.getAttribute('data-detail')
+      if (sf) placeSf(sf, e.target)
+      if (detail) openDetail(detail)
+    })
+
+    async function placeSf(id, button) {
+      const r0 = await req('/admin/orders/' + id)
+      const o = r0.data || {}
+      const sender = o.sender || {}
+      const receiver = o.receiver || {}
+      const text = [
+        '将向顺丰真实下单，成功会生成运单并可能计费。',
+        '寄件：' + [sender.name, sender.city, sender.detail].filter(Boolean).join(' '),
+        '收件：' + [receiver.name, receiver.city, receiver.detail].filter(Boolean).join(' '),
+        '宠物：' + [o.petName || o.breed, o.weightKg ? o.weightKg + 'kg' : '', o.pickupDate].filter(Boolean).join(' ')
+      ].join('\n')
+      if (!confirm(text)) return
+      button.disabled = true
+      button.textContent = '下单中'
+      try {
+        const r = await req('/admin/orders/' + id + '/sf-retry', { method: 'POST', body: '{}' })
+        if (r.code) {
+          alert(r.message || '下单失败')
+        } else if (r.data && r.data.sfWaybillNo) {
+          alert('顺丰已出运单 ' + r.data.sfWaybillNo)
+        } else {
+          alert((r.data && r.data.sfError) || '顺丰没有返回运单')
+        }
+      } finally {
+        await loadOrders()
+        if (window.__oid === id) openDetail(id)
+      }
+    }
+
     async function openDetail(id) {
-      const r = await req('/admin/orders/'+id)
+      const r = await req('/admin/orders/' + id)
+      if (r.code) return alert(r.message || '加载失败')
       const o = r.data
       window.__oid = id
-      window.__order = o
-      const canSf = o.status === 'paid' || o.status === 'sf_failed'
-      const sfLabel = o.status === 'sf_failed' ? '再次向顺丰下上门取件' : '已电话回访，向顺丰下上门取件'
-      document.getElementById('detail').innerHTML = `
-        <h3>订单 ${esc(id)}</h3>
-        <p>状态 <b>${esc(STATUS_LABEL[o.status] || o.status)}</b> 运单 ${esc(o.sfWaybillNo||'无')} 错误 ${esc(o.sfError||o.rawSfError||'-')}</p>
-        <p>下单账号 ${esc(o.userNick || '-')} ${esc(o.userPhone || '未留手机号')}</p>
-        <p><b>寄件（回访这个电话）</b><br>${esc(who(o.sender))}</p>
-        <p><b>收件</b><br>${esc(who(o.receiver))}</p>
-        <p><b>宠物</b> ${esc(o.petName || '未填名')} / ${esc(o.breed || o.species || '')} / ${esc(o.weightKg || '')}kg / 取件日 ${esc(o.pickupDate || '')}</p>
-        <pre>${esc(JSON.stringify({sender:o.sender,receiver:o.receiver,pet:o.breed,weight:o.weightKg,pickup:o.pickupDate,lines:o.lines},null,2))}</pre>
-        <div class="row">
-          ${canSf ? `<button onclick="submitSf()">${sfLabel}</button>` : ''}
-          <input id="wb" placeholder="补运单号" />
-          <button onclick="waybill()">保存运单</button>
-          <input id="kg" placeholder="实际重量kg" />
-          <button onclick="reweigh()">复秤</button>
-          <button onclick="act('/admin/orders/'+window.__oid+'/refund')">退款</button>
-          <button onclick="act('/admin/orders/'+window.__oid+'/mark-signed')">标记签收</button>
-        </div>`
-    }
-    async function submitSf() {
-      const o = window.__order || {}
-      const sender = o.sender || {}
-      const msg = '确认已电话回访 ' + (sender.name || '') + ' ' + (sender.phone || '') + ' ？确认后将按当前服务环境向顺丰下上门取件，成功会生成运单并可能计费。'
-      if (!confirm(msg)) return
-      const r = await req('/admin/orders/' + window.__oid + '/sf-retry', { method:'POST', body:'{}' })
-      const d = r.data || {}
-      if (r.code) alert(r.message || '下单失败')
-      else if (d.sfWaybillNo) alert('已出运单 ' + d.sfWaybillNo)
-      else alert(d.sfError || d.rawSfError || '顺丰未出单')
-      openDetail(window.__oid); loadOrders()
+      const box = document.getElementById('detail')
+      box.style.display = 'block'
+      box.innerHTML = ''
+        + '<h3>订单 ' + esc(id) + '</h3>'
+        + '<p>状态 <b>' + esc(STATUS_LABEL[o.status] || o.status) + '</b>'
+        + '　运单 ' + esc(o.sfWaybillNo || '无')
+        + '　账号 ' + esc(o.userNick || '') + ' ' + esc(o.userPhone || '') + '</p>'
+        + (o.sfError ? '<p class="err">' + esc(o.sfError) + '</p>' : '')
+        + '<p><b>寄件</b><br>' + addr(o.sender) + '</p>'
+        + '<p><b>收件</b><br>' + addr(o.receiver) + '</p>'
+        + '<p><b>宠物</b> ' + petLine(o) + '</p>'
+        + '<p><b>顺丰估价</b> ' + sfQuoteText(o)
+        + '　加价后运费 ' + (o.sellFreightCents == null ? '—' : '¥' + yuan(o.sellFreightCents))
+        + '　服务费 ' + (o.serviceFeeCents == null ? '—' : '¥' + yuan(o.serviceFeeCents))
+        + '　顾客实付 ¥' + yuan(o.paidCents) + '</p>'
+        + '<pre>' + esc(JSON.stringify({ lines: o.lines, paidCents: o.paidCents, quoteProductName: o.quoteProductName, expressTypeId: o.sfExpressTypeId }, null, 2)) + '</pre>'
+        + '<div class="row">'
+        + '<label>手工录入运单号<input id="wb" placeholder="SF…" /></label>'
+        + '<button class="ghost" id="saveWb">保存运单</button>'
+        + '<label>实际重量 kg<input id="kg" /></label>'
+        + '<button class="ghost" id="doReweigh">复秤</button>'
+        + '<button class="ghost" id="doRefund">标记退款</button>'
+        + '<button class="ghost" id="doSigned">标记签收</button>'
+        + '</div>'
+      document.getElementById('saveWb').onclick = waybill
+      document.getElementById('doReweigh').onclick = reweigh
+      document.getElementById('doRefund').onclick = () => act('/admin/orders/' + id + '/refund')
+      document.getElementById('doSigned').onclick = () => act('/admin/orders/' + id + '/mark-signed')
     }
     async function act(path) {
-      const r = await req(path, { method:'POST', body:'{}' })
-      alert(r.message || 'ok')
-      openDetail(window.__oid); loadOrders()
+      const r = await req(path, { method: 'POST', body: '{}' })
+      alert(r.code ? (r.message || '失败') : '已更新')
+      openDetail(window.__oid)
+      loadOrders()
     }
     async function waybill() {
-      await req('/admin/orders/'+window.__oid+'/waybill', { method:'POST', body: JSON.stringify({ waybillNo: document.getElementById('wb').value }) })
-      openDetail(window.__oid); loadOrders()
+      const waybillNo = document.getElementById('wb').value.trim()
+      if (!waybillNo) return alert('请填写运单号')
+      const r = await req('/admin/orders/' + window.__oid + '/waybill', {
+        method: 'POST',
+        body: JSON.stringify({ waybillNo })
+      })
+      if (r.code) return alert(r.message || '保存失败')
+      alert('已录入 ' + waybillNo)
+      openDetail(window.__oid)
+      loadOrders()
     }
     async function reweigh() {
-      await req('/admin/orders/'+window.__oid+'/reweigh', { method:'POST', body: JSON.stringify({ actualKg: Number(document.getElementById('kg').value) }) })
-      openDetail(window.__oid); loadOrders()
+      const r = await req('/admin/orders/' + window.__oid + '/reweigh', {
+        method: 'POST',
+        body: JSON.stringify({ actualKg: Number(document.getElementById('kg').value) })
+      })
+      alert(r.code ? (r.message || '复秤失败') : '已记录复秤')
+      openDetail(window.__oid)
+      loadOrders()
+    }
+
+    function previewMarkup() {
+      const percent = Number(document.getElementById('markupPercent').value)
+      const minYuan = Number(document.getElementById('minFeeYuan').value)
+      const el = document.getElementById('markupPreview')
+      if (!Number.isFinite(percent) || !Number.isFinite(minYuan)) {
+        el.textContent = ''
+        return
+      }
+      const cost = 100
+      const fee = Math.max(cost * percent / 100, minYuan)
+      el.textContent = '举例：顺丰成本 100 元时，服务费 ' + fee.toFixed(2) + ' 元，顾客运费 ' + (cost + fee).toFixed(2) + ' 元。航空箱、检疫、保价另计。'
     }
     async function loadSettings() {
       const r = await req('/admin/settings')
-      for (const k of ['markup_rate','min_service_fee_cents','cancel_fee_before_collect_cents']) {
-        if (document.getElementById(k)) document.getElementById(k).value = r.data[k] || ''
-      }
+      const d = r.data || {}
+      document.getElementById('markupPercent').value = d.markup_rate != null && d.markup_rate !== '' ? String(Math.round(Number(d.markup_rate) * 1000) / 10) : ''
+      document.getElementById('minFeeYuan').value = d.min_service_fee_cents != null && d.min_service_fee_cents !== '' ? String(Number(d.min_service_fee_cents) / 100) : ''
+      document.getElementById('cancelFeeYuan').value = d.cancel_fee_before_collect_cents != null && d.cancel_fee_before_collect_cents !== '' ? String(Number(d.cancel_fee_before_collect_cents) / 100) : ''
+      previewMarkup()
     }
     async function saveSettings() {
-      const body = {}
-      for (const k of ['markup_rate','min_service_fee_cents','cancel_fee_before_collect_cents']) {
-        body[k] = document.getElementById(k).value
-      }
-      await req('/admin/settings', { method:'PUT', body: JSON.stringify(body) })
-      alert('已保存')
+      const percent = Number(document.getElementById('markupPercent').value)
+      const minYuan = Number(document.getElementById('minFeeYuan').value)
+      const cancelYuan = Number(document.getElementById('cancelFeeYuan').value)
+      if (!(percent >= 0 && percent <= 100)) return alert('加价请填 0 到 100 之间的百分数')
+      if (!(minYuan >= 0) || !(cancelYuan >= 0)) return alert('金额不能为负')
+      const r = await req('/admin/settings', {
+        method: 'PUT',
+        body: JSON.stringify({
+          markup_rate: String(percent / 100),
+          min_service_fee_cents: String(Math.round(minYuan * 100)),
+          cancel_fee_before_collect_cents: String(Math.round(cancelYuan * 100))
+        })
+      })
+      if (r.code) return alert(r.message || '保存失败')
+      alert('加价已保存，下一笔估价生效')
+      loadSettings()
     }
+    function togglePassword() {
+      const box = document.getElementById('pwdBox')
+      box.style.display = box.style.display === 'block' ? 'none' : 'block'
+    }
+    async function changePassword() {
+      const msg = document.getElementById('pwdMsg')
+      const btn = document.getElementById('pwdBtn')
+      const currentPassword = document.getElementById('oldPwd').value
+      const newPassword = document.getElementById('newPwd').value
+      const again = document.getElementById('newPwd2').value
+      msg.style.color = '#9b2c2c'
+      msg.textContent = ''
+      if (newPassword.length < 6) {
+        msg.textContent = '新密码至少 6 位'
+        return
+      }
+      if (newPassword !== again) {
+        msg.textContent = '两次输入的新密码不一致'
+        return
+      }
+      btn.disabled = true
+      try {
+        const r = await req('/admin/password', {
+          method: 'POST',
+          body: JSON.stringify({ currentPassword, newPassword })
+        })
+        if (r.code) {
+          msg.textContent = r.message || '修改失败'
+          return
+        }
+        token = ''
+        adminName = ''
+        localStorage.removeItem('adminToken')
+        localStorage.removeItem('adminUser')
+        document.getElementById('oldPwd').value = ''
+        document.getElementById('newPwd').value = ''
+        document.getElementById('newPwd2').value = ''
+        document.getElementById('pwd').value = ''
+        msg.style.color = '#2d5a4a'
+        msg.textContent = '密码已更新，请用新密码登录'
+      } catch (e) {
+        msg.textContent = e.message || '修改失败'
+      } finally {
+        btn.disabled = false
+      }
+    }
+    function previewVip() {
+      const percent = Number(document.getElementById('vipDiscountPercent').value)
+      const el = document.getElementById('vipPreview')
+      if (!Number.isFinite(percent)) {
+        el.textContent = ''
+        return
+      }
+      el.textContent = percent > 0
+        ? '举例：原运费 100 元时，VIP 实付运费 ' + (100 * (1 - percent / 100)).toFixed(2) + ' 元。'
+        : '当前折扣为 0，VIP 运费与普通顾客相同。'
+    }
+    async function loadVips() {
+      const r = await req('/admin/vips')
+      const d = r.data || {}
+      if (document.activeElement !== document.getElementById('vipDiscountPercent')) {
+        document.getElementById('vipDiscountPercent').value = d.discountRate ? String(Math.round(Number(d.discountRate) * 1000) / 10) : '0'
+      }
+      previewVip()
+      const list = d.list || []
+      document.getElementById('vipEmpty').style.display = list.length ? 'none' : 'block'
+      document.getElementById('vipBody').innerHTML = list.map((item) => (
+        '<tr><td>' + esc(item.phone) + '</td><td>' + esc(item.name || '—') + '</td><td>' + esc(when(item.createdAt)) + '</td>'
+        + '<td><button class="ghost" data-vip="' + esc(item.phone) + '">移除</button></td></tr>'
+      )).join('')
+    }
+    async function saveVipDiscount() {
+      const percent = Number(document.getElementById('vipDiscountPercent').value)
+      const msg = document.getElementById('vipMsg')
+      msg.style.color = '#9b2c2c'
+      if (!(percent >= 0 && percent < 100)) {
+        msg.textContent = '折扣请填 0 到 99 之间的百分数'
+        return
+      }
+      const r = await req('/admin/settings', {
+        method: 'PUT',
+        body: JSON.stringify({ vip_discount_rate: String(percent / 100) })
+      })
+      if (r.code) {
+        msg.textContent = r.message || '保存失败'
+        return
+      }
+      msg.style.color = '#2d5a4a'
+      msg.textContent = '折扣已保存，下一笔估价生效'
+      loadVips()
+    }
+    async function addVip() {
+      const msg = document.getElementById('vipMsg')
+      msg.style.color = '#9b2c2c'
+      const phone = document.getElementById('vipPhone').value.trim()
+      const name = document.getElementById('vipName').value.trim()
+      const r = await req('/admin/vips', {
+        method: 'POST',
+        body: JSON.stringify({ phone, name })
+      })
+      if (r.code) {
+        msg.textContent = r.message || '登记失败'
+        return
+      }
+      document.getElementById('vipPhone').value = ''
+      document.getElementById('vipName').value = ''
+      msg.style.color = '#2d5a4a'
+      msg.textContent = '已登记 ' + phone
+      loadVips()
+    }
+    document.getElementById('vipBody').addEventListener('click', async (e) => {
+      const phone = e.target.getAttribute('data-vip')
+      if (!phone) return
+      if (!confirm('移除 VIP ' + phone + ' ？之后估价不再打折。')) return
+      const r = await req('/admin/vips/' + encodeURIComponent(phone), { method: 'DELETE' })
+      const msg = document.getElementById('vipMsg')
+      if (r.code) {
+        msg.style.color = '#9b2c2c'
+        msg.textContent = r.message || '移除失败'
+        return
+      }
+      msg.style.color = '#2d5a4a'
+      msg.textContent = '已移除 ' + phone
+      loadVips()
+    })
+    document.getElementById('markupPercent').addEventListener('input', previewMarkup)
+    document.getElementById('minFeeYuan').addEventListener('input', previewMarkup)
+    document.getElementById('vipDiscountPercent').addEventListener('input', previewVip)
+    document.getElementById('pwd').addEventListener('keydown', (e) => { if (e.key === 'Enter') login() })
     if (token) showApp()
   </script>
 </body>

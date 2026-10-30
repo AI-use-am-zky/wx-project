@@ -1,0 +1,23 @@
+<view class="page">
+  <view class="logo">航</view>
+  <view class="title">航宠通</view>
+  <view class="sub">{{devtools ? '开发者工具使用模拟手机号登录，真机仍需授权手机号' : '授权手机号后登录。登录会保持到你退出'}}</view>
+
+  <button wx:if="{{devtools}}" class="wx-btn" bindtap="onDevLogin">手机号快捷登录</button>
+  <button wx:elif="{{!agreed}}" class="wx-btn" bindtap="needAgree">手机号快捷登录</button>
+  <button
+    wx:else
+    class="wx-btn"
+    open-type="getPhoneNumber|agreePrivacyAuthorization"
+    bindgetphonenumber="onPhone"
+    bindagreeprivacyauthorization="onAgreePrivacy"
+  >手机号快捷登录</button>
+
+  <view class="agree" bindtap="toggleAgree">
+    <view class="box {{agreed ? 'on' : ''}}"></view>
+    <text>我已阅读并同意</text>
+    <text class="link" catchtap="openAgreement">《运输服务协议》</text>
+  </view>
+
+  <view wx:if="{{lastError}}" class="err" bindtap="clearError">{{lastError}}</view>
+</view>

@@ -1,7 +1,7 @@
 {
   "navigationStyle": "custom",
   "navigationBarTextStyle": "white",
-  "navigationBarTitleText": "宠途空运",
+  "navigationBarTitleText": "航宠通",
   "backgroundColor": "#f3efe8",
   "usingComponents": {
     "nav-bar": "/components/nav-bar/index"

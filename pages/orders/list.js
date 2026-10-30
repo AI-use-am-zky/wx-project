@@ -1,4 +1,4 @@
-const { isLoggedIn, login } = require('../../utils/auth')
+const { isLoggedIn, openLogin } = require('../../utils/auth')
 const { request } = require('../../utils/request')
 const { filterOrders } = require('../../utils/order-tabs')
 const { getBook, saveBook } = require('../../utils/book')
@@ -10,7 +10,7 @@ const { photoSrc } = require('../../utils/photo')
 
 const STATUS_TEXT = {
   pending_pay: '待支付',
-  paid: '待回访',
+  paid: '下单成功',
   sf_submitting: '下单中',
   sf_failed: '待处理',
   booked: '待取件',
@@ -130,7 +130,8 @@ Page({
       })
       .catch((e) => {
         if (e && e.code === 401) {
-          login().then(() => this.load()).catch(() => this.setData({ needLogin: true, list: [] }))
+          this.setData({ needLogin: true, list: [] })
+          openLogin('tab:/pages/orders/list')
           return
         }
         this._all = []
@@ -178,7 +179,7 @@ Page({
     this.apply()
   },
   doLogin() {
-    login().then(() => this.onShow()).catch((e) => wx.showToast({ title: e.message || '登录失败', icon: 'none' }))
+    openLogin('tab:/pages/orders/list')
   },
   open(e) {
     wx.navigateTo({ url: '/pages/orders/detail?id=' + e.currentTarget.dataset.id })
