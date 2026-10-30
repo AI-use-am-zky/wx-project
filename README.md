@@ -5,7 +5,7 @@
 | | |
 | --- | --- |
 | **代码仓库** | https://github.com/AI-use-am-zky/wx-project |
-| **UI 演示（高保真原型）** | https://ai-use-am-zky.github.io/wx-project/ |
+| **UI 演示（高保真原型）** | https://ai-use-am-zky.github.io/wx-project/ （也可直达 `/2-design/`） |
 | **技术栈** | 微信小程序 · Node.js / Express · SQLite · 微信登录/支付 · 顺丰开放平台 |
 
 ### 简历可写要点
